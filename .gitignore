@@ -1,0 +1,6 @@
+# BMAD
+_bmad/
+_bmad-output/
+
+# Claude
+.claude/
