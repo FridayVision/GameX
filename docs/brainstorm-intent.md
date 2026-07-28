@@ -1,4 +1,4 @@
-# Brainstorm Intent — Debate Bracket
+# Brainstorm Intent — GameX
 
 **Session:** brainstorm-debate-bracket-open-decisions — 2026-07-27
 **Status:** All decisions resolved. Ready for PRD.

@@ -1,4 +1,4 @@
-# Debate Bracket — Dev Task List
+# GameX — Dev Task List
 
 Generated from brainstorming session: 2026-07-27
 Tech stack: Next.js + Socket.IO

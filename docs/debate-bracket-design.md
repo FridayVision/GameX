@@ -1,4 +1,4 @@
-# Debate Bracket — game and app design
+# GameX — game and app design
 
 A party game for a small group. Two choices go head to head, everybody argues, everybody
 votes, one advances. Repeat until a champion. Underneath, each player is secretly rooting
