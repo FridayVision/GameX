@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GameX — Board · Inter-Round Assignment</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700;900&display=swap" rel="stylesheet">
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>tailwind.config = { theme: { extend: { fontFamily: { sans: ['Space Grotesk','sans-serif'] } } } }</script>
+
+    <style>
+        *, *::before, *::after { box-sizing: border-box; }
+
+        body {
+            font-family: 'Space Grotesk', sans-serif;
+            width: 100vw; height: 100vh;
+            overflow: hidden;
+            background-color: #060d05;
+            color: #fafffe;
+        }
+
+        /* ── LED background (shared) ───────────────────────────────────── */
+        .led-dots {
+            position: absolute; inset: 0; z-index: 0;
+            background-image: radial-gradient(circle, rgba(250,255,254,0.28) 1.5px, transparent 1.5px);
+            background-size: 26px 26px;
+            animation: dots-breathe 6s ease-in-out infinite;
+        }
+        @keyframes dots-breathe {
+            0%, 100% { opacity: 0.55; }
+            50%       { opacity: 1; }
+        }
+        .led-orange {
+            position: absolute; inset: 0; z-index: 0;
+            background:
+                radial-gradient(ellipse 95% 78% at 8% 92%,  rgba(236,88,56,0.22) 0%, rgba(190,48,10,0.09) 38%, transparent 62%),
+                radial-gradient(ellipse 60% 50% at 65% 2%,  rgba(200,60,18,0.11)  0%, transparent 55%);
+        }
+        .led-teal {
+            position: absolute; inset: 0; z-index: 0;
+            background:
+                radial-gradient(ellipse 80% 65% at 94% 8%,  rgba(21,244,199,0.16) 0%, rgba(8,180,155,0.06) 36%, transparent 60%),
+                radial-gradient(ellipse 42% 35% at 90% 72%, rgba(21,244,199,0.05)  0%, transparent 52%);
+        }
+        .led-void {
+            position: absolute; inset: 0; z-index: 0;
+            background: radial-gradient(ellipse 60% 62% at 50% 50%, rgba(4,9,3,0.94) 0%, rgba(6,12,5,0.62) 44%, transparent 72%);
+        }
+
+        /* ── Entrance animations ────────────────────────────────────────── */
+        .reveal-fade-up {
+            opacity: 0; transform: translateY(28px);
+            transition: opacity 0.7s cubic-bezier(0.16,1,0.3,1), transform 0.7s cubic-bezier(0.16,1,0.3,1);
+        }
+        .reveal-scale-in {
+            opacity: 0; transform: scale(0.7);
+            transition: opacity 0.6s cubic-bezier(0.34,1.56,0.64,1), transform 0.6s cubic-bezier(0.34,1.56,0.64,1);
+        }
+        .is-loaded .reveal-fade-up  { opacity: 1; transform: translateY(0); }
+        .is-loaded .reveal-scale-in { opacity: 1; transform: scale(1); }
+        .d-100  { transition-delay:  100ms; }
+        .d-200  { transition-delay:  200ms; }
+        .d-300  { transition-delay:  300ms; }
+        .d-400  { transition-delay:  400ms; }
+        .d-500  { transition-delay:  500ms; }
+        .d-600  { transition-delay:  600ms; }
+        .d-700  { transition-delay:  700ms; }
+        .d-800  { transition-delay:  800ms; }
+        .d-900  { transition-delay:  900ms; }
+        .d-1000 { transition-delay: 1000ms; }
+        .d-1100 { transition-delay: 1100ms; }
+
+        /* ── Player indicator circles (large, centrepiece) ─────────────── */
+        .assign-player {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .assign-dot {
+            width: 76px; height: 76px;
+            border-radius: 50%;
+            position: relative;
+            flex-shrink: 0;
+            transition: background 0.5s ease, box-shadow 0.5s ease,
+                        border-color 0.5s ease, opacity 0.5s ease;
+        }
+
+        /* Waiting: hollow ring, pulses */
+        .assign-dot.waiting {
+            background: transparent;
+            opacity: 0.45;
+            animation: ring-pulse 2.4s ease-in-out infinite;
+        }
+        @keyframes ring-pulse {
+            0%, 100% { opacity: 0.30; transform: scale(1);    }
+            50%       { opacity: 0.65; transform: scale(1.06); }
+        }
+
+        /* Confirmed: filled, checkmark, glow */
+        .assign-dot.confirmed {
+            animation: none;
+            opacity: 1;
+        }
+        .assign-dot.confirmed::after {
+            content: '✓';
+            position: absolute; inset: 0;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 28px; font-weight: 900;
+            color: rgba(0,0,0,0.45);
+        }
+
+        .assign-name {
+            font-size: 14px; font-weight: 600;
+            transition: color 0.4s ease;
+        }
+        .assign-name.waiting  { color: rgba(250,255,254,0.35); }
+        .assign-name.confirmed{ color: rgba(250,255,254,0.90); }
+
+        /* ── Gate status pill ───────────────────────────────────────────── */
+        .gate-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 24px;
+            border-radius: 10px;
+            background: rgba(8,14,7,0.65);
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(250,255,254,0.10);
+            font-size: 0.85rem;
+            font-weight: 600;
+            letter-spacing: 0.06em;
+            color: rgba(250,255,254,0.55);
+            transition: border-color 0.5s ease, color 0.5s ease, box-shadow 0.5s ease;
+        }
+        .gate-pill.all-confirmed {
+            border-color: rgba(21,244,199,0.35);
+            color: #15F4C7;
+            box-shadow: 0 0 28px rgba(21,244,199,0.12);
+        }
+        .gate-dot {
+            width: 8px; height: 8px; border-radius: 50%;
+            background: rgba(250,255,254,0.30);
+            transition: background 0.5s ease;
+            flex-shrink: 0;
+        }
+        .gate-pill.all-confirmed .gate-dot { background: #15F4C7; }
+
+        /* ── Dev toggle ──────────────────────────────────────────────────── */
+        #state-toggle {
+            position: fixed; bottom: 16px; right: 20px; z-index: 100;
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 11px; font-weight: 600; letter-spacing: 0.08em;
+            color: rgba(250,255,254,0.35);
+            background: rgba(8,14,7,0.50);
+            border: 1px solid rgba(250,255,254,0.10);
+            border-radius: 6px; padding: 5px 12px;
+            cursor: pointer; text-transform: uppercase;
+            transition: color 0.2s, border-color 0.2s;
+        }
+        #state-toggle:hover { color: rgba(250,255,254,0.75); border-color: rgba(250,255,254,0.25); }
+    </style>
+</head>
+
+<body class="flex flex-col antialiased" id="app-root">
+
+    <!-- ── LED background ──────────────────────────────────────────── -->
+    <div class="led-dots"   aria-hidden="true"></div>
+    <div class="led-orange" aria-hidden="true"></div>
+    <div class="led-teal"   aria-hidden="true"></div>
+    <div class="led-void"   aria-hidden="true"></div>
+
+    <!-- ── TOP BAR ──────────────────────────────────────────────────── -->
+    <header class="relative z-10 w-full px-12 py-5 flex justify-between items-center"
+            style="border-bottom:1px solid rgba(250,255,254,0.08)">
+
+        <div class="reveal-fade-up d-100"
+             style="background:rgba(8,14,7,0.60);backdrop-filter:blur(8px);
+                    border:1px solid rgba(250,255,254,0.08);border-radius:8px;padding:6px 16px;
+                    color:rgba(250,255,254,0.55);letter-spacing:0.14em;text-transform:uppercase;
+                    font-size:0.78rem;font-weight:600">
+            ROUND 3 OF 4 <span style="opacity:0.4;margin:0 6px">·</span> INTER-ROUND
+        </div>
+
+        <div class="reveal-fade-up d-200">
+            <span style="background:rgba(8,14,7,0.70);color:rgba(250,255,254,0.80);
+                         padding:6px 20px;border-radius:6px;
+                         font-weight:700;letter-spacing:0.12em;text-transform:uppercase;font-size:0.8rem;
+                         border:1px solid rgba(250,255,254,0.14)">
+                ASSIGNMENTS
+            </span>
+        </div>
+    </header>
+
+    <!-- ── MAIN AREA ─────────────────────────────────────────────────── -->
+    <main class="relative z-10 flex-1 flex flex-col items-center justify-center gap-0">
+
+        <!-- Round number — large, cinematic -->
+        <div class="reveal-scale-in d-200 flex flex-col items-center"
+             style="margin-bottom:10px">
+            <div style="display:flex;align-items:baseline;gap:16px">
+                <span style="font-size:7.5rem;font-weight:900;letter-spacing:-0.04em;
+                             line-height:1;color:#fafffe;
+                             text-shadow:0 0 80px rgba(250,255,254,0.06)">3</span>
+                <div style="display:flex;flex-direction:column;justify-content:flex-end;padding-bottom:14px">
+                    <span style="font-size:0.75rem;font-weight:600;letter-spacing:0.18em;
+                                 text-transform:uppercase;color:rgba(250,255,254,0.35);line-height:1">ROUND</span>
+                    <span style="font-size:1.5rem;font-weight:700;color:rgba(250,255,254,0.30);line-height:1.2">of 4</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Subtitle -->
+        <p class="reveal-fade-up d-300"
+           style="font-size:1rem;font-weight:500;color:rgba(250,255,254,0.40);
+                  letter-spacing:0.06em;margin:0 0 52px">
+            Players are checking their assignments
+        </p>
+
+        <!-- ── Player status indicators ─────────────────────────────── -->
+        <div style="display:flex;gap:56px;align-items:flex-start;margin-bottom:52px">
+
+            <!-- Raahul — confirmed -->
+            <div class="assign-player reveal-fade-up d-400">
+                <div class="assign-dot confirmed" id="dot-raahul"
+                     style="background:#FF6B6B;box-shadow:0 0 22px rgba(255,107,107,0.40);
+                            border:2.5px solid transparent"></div>
+                <span class="assign-name confirmed" id="name-raahul">Raahul</span>
+            </div>
+
+            <!-- Padma — confirmed -->
+            <div class="assign-player reveal-fade-up d-500">
+                <div class="assign-dot confirmed" id="dot-padma"
+                     style="background:#4ECDC4;box-shadow:0 0 22px rgba(78,205,196,0.40);
+                            border:2.5px solid transparent"></div>
+                <span class="assign-name confirmed" id="name-padma">Padma</span>
+            </div>
+
+            <!-- Sri — confirmed -->
+            <div class="assign-player reveal-fade-up d-600">
+                <div class="assign-dot confirmed" id="dot-sri"
+                     style="background:#FFE66D;box-shadow:0 0 22px rgba(255,230,109,0.40);
+                            border:2.5px solid transparent"></div>
+                <span class="assign-name confirmed" id="name-sri">Sri</span>
+            </div>
+
+            <!-- Derin — waiting -->
+            <div class="assign-player reveal-fade-up d-700">
+                <div class="assign-dot waiting" id="dot-derin"
+                     style="border:2.5px solid #A8E6CF"></div>
+                <span class="assign-name waiting" id="name-derin">Derin</span>
+            </div>
+
+            <!-- Akshi — waiting -->
+            <div class="assign-player reveal-fade-up d-800">
+                <div class="assign-dot waiting" id="dot-akshi"
+                     style="border:2.5px solid #C3A6FF"></div>
+                <span class="assign-name waiting" id="name-akshi">Akshi</span>
+            </div>
+
+        </div>
+
+        <!-- ── Gate status ───────────────────────────────────────────── -->
+        <div class="reveal-fade-up d-900">
+            <div class="gate-pill" id="gate-pill">
+                <div class="gate-dot" id="gate-dot"></div>
+                <span id="gate-text">3 of 5 confirmed — waiting for Derin &amp; Akshi</span>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- ── BOTTOM BAR — minimal, consistent chrome ───────────────────── -->
+    <footer class="relative z-10 w-full flex items-center justify-center px-12"
+            style="height:72px;border-top:1px solid rgba(250,255,254,0.06)">
+        <span style="font-size:0.72rem;font-weight:500;letter-spacing:0.10em;
+                     text-transform:uppercase;color:rgba(250,255,254,0.38);
+                     background:rgba(8,14,7,0.55);backdrop-filter:blur(6px);
+                     border:1px solid rgba(250,255,254,0.12);border-radius:6px;
+                     padding:5px 14px">
+            Board is receive-only — assignment cards are on each player's device
+        </span>
+    </footer>
+
+    <!-- ── Dev toggle ───────────────────────────────────────────────── -->
+    <button id="state-toggle" onclick="toggleState()">→ All Confirmed</button>
+
+    <script>
+        requestAnimationFrame(() => setTimeout(() =>
+            document.getElementById('app-root').classList.add('is-loaded'), 80));
+
+        const PLAYERS = [
+            { id: 'raahul', color: '#FF6B6B', shadow: 'rgba(255,107,107,0.40)', borderColor: '#FF6B6B' },
+            { id: 'padma',  color: '#4ECDC4', shadow: 'rgba(78,205,196,0.40)',  borderColor: '#4ECDC4' },
+            { id: 'sri',    color: '#FFE66D', shadow: 'rgba(255,230,109,0.40)', borderColor: '#FFE66D' },
+            { id: 'derin',  color: '#A8E6CF', shadow: 'rgba(168,230,207,0.40)', borderColor: '#A8E6CF' },
+            { id: 'akshi',  color: '#C3A6FF', shadow: 'rgba(195,166,255,0.40)', borderColor: '#C3A6FF' },
+        ];
+
+        function setDot(p, confirmed) {
+            const dot  = document.getElementById('dot-' + p.id);
+            const name = document.getElementById('name-' + p.id);
+
+            if (confirmed) {
+                dot.className  = 'assign-dot confirmed';
+                dot.style.background   = p.color;
+                dot.style.boxShadow    = `0 0 22px ${p.shadow}`;
+                dot.style.border       = '2.5px solid transparent';
+                name.className = 'assign-name confirmed';
+            } else {
+                dot.className  = 'assign-dot waiting';
+                dot.style.background   = 'transparent';
+                dot.style.boxShadow    = 'none';
+                dot.style.border       = `2.5px solid ${p.borderColor}`;
+                name.className = 'assign-name waiting';
+            }
+        }
+
+        const VOTING_STATE = {
+            confirmed: ['raahul','padma','sri'],
+            gateText:  '3 of 5 confirmed — waiting for Derin &amp; Akshi',
+            allDone:   false,
+            label:     '→ All Confirmed',
+        };
+
+        const ALL_CONFIRMED_STATE = {
+            confirmed: ['raahul','padma','sri','derin','akshi'],
+            gateText:  'All players confirmed — Host can start the round',
+            allDone:   true,
+            label:     '← Back to In Progress',
+        };
+
+        let isAllConfirmed = false;
+
+        function applyState(s) {
+            PLAYERS.forEach(p => setDot(p, s.confirmed.includes(p.id)));
+
+            const gate = document.getElementById('gate-pill');
+            gate.className = 'gate-pill' + (s.allDone ? ' all-confirmed' : '');
+            document.getElementById('gate-text').innerHTML = s.gateText;
+            document.getElementById('state-toggle').textContent = s.label;
+        }
+
+        function toggleState() {
+            isAllConfirmed = !isAllConfirmed;
+            applyState(isAllConfirmed ? ALL_CONFIRMED_STATE : VOTING_STATE);
+        }
+
+        applyState(VOTING_STATE);
+    </script>
+</body>
+</html>

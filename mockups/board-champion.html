@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GameX — Board · Champion</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700;900&display=swap" rel="stylesheet">
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>tailwind.config = { theme: { extend: { fontFamily: { sans: ['Space Grotesk','sans-serif'] } } } }</script>
+
+    <style>
+        *, *::before, *::after { box-sizing: border-box; }
+
+        body {
+            font-family: 'Space Grotesk', sans-serif;
+            width: 100vw; height: 100vh;
+            overflow: hidden;
+            background-color: #060d05;
+            color: #fafffe;
+        }
+
+        /* ── LED background — orange pushed warmer for champion feel ──── */
+        .led-dots {
+            position: absolute; inset: 0; z-index: 0;
+            background-image: radial-gradient(circle, rgba(250,255,254,0.28) 1.5px, transparent 1.5px);
+            background-size: 26px 26px;
+            animation: dots-breathe 6s ease-in-out infinite;
+        }
+        @keyframes dots-breathe {
+            0%, 100% { opacity: 0.55; }
+            50%       { opacity: 1; }
+        }
+        /* Stronger orange — winning atmosphere */
+        .led-orange {
+            position: absolute; inset: 0; z-index: 0;
+            background:
+                radial-gradient(ellipse 95% 78% at 8% 92%,  rgba(236,88,56,0.36) 0%, rgba(190,48,10,0.15) 38%, transparent 62%),
+                radial-gradient(ellipse 70% 55% at 50% 0%,  rgba(220,72,30,0.22) 0%, transparent 55%),
+                radial-gradient(ellipse 60% 50% at 92% 10%, rgba(200,60,18,0.14) 0%, transparent 50%);
+        }
+        .led-teal {
+            position: absolute; inset: 0; z-index: 0;
+            background:
+                radial-gradient(ellipse 55% 45% at 96% 8%,  rgba(21,244,199,0.12) 0%, transparent 58%),
+                radial-gradient(ellipse 35% 28% at 90% 75%, rgba(21,244,199,0.04) 0%, transparent 50%);
+        }
+        .led-void {
+            position: absolute; inset: 0; z-index: 0;
+            background: radial-gradient(ellipse 60% 62% at 50% 50%, rgba(4,9,3,0.92) 0%, rgba(6,12,5,0.58) 44%, transparent 72%);
+        }
+
+        /* ── Spotlight behind champion card ─────────────────────────── */
+        .champion-spotlight {
+            position: absolute;
+            top: 8%; left: 50%;
+            transform: translateX(-50%);
+            width: 700px; height: 700px;
+            border-radius: 50%;
+            background: radial-gradient(ellipse at center,
+                rgba(236,88,56,0.18) 0%,
+                rgba(200,55,20,0.08) 40%,
+                transparent 70%);
+            filter: blur(30px);
+            z-index: 1;
+            pointer-events: none;
+            animation: spotlight-breathe 3s ease-in-out infinite;
+        }
+        @keyframes spotlight-breathe {
+            0%, 100% { opacity: 0.7; transform: translateX(-50%) scale(1);    }
+            50%       { opacity: 1;   transform: translateX(-50%) scale(1.08); }
+        }
+
+        /* ── Champion card — pulsing orange glow ────────────────────── */
+        @keyframes champ-pulse {
+            0%, 100% {
+                box-shadow:
+                    0 0 0 2px #ec5838,
+                    0 0 40px  rgba(236,88,56,0.50),
+                    0 0 100px rgba(236,88,56,0.22),
+                    0 28px 55px -10px rgba(0,0,0,0.85);
+            }
+            50% {
+                box-shadow:
+                    0 0 0 2px #ec5838,
+                    0 0 70px  rgba(236,88,56,0.80),
+                    0 0 160px rgba(236,88,56,0.38),
+                    0 28px 55px -10px rgba(0,0,0,0.85);
+            }
+        }
+        @keyframes wild-pulse {
+            0%, 100% {
+                box-shadow:
+                    0 0 0 2px #15F4C7,
+                    0 0 40px  rgba(21,244,199,0.45),
+                    0 0 100px rgba(21,244,199,0.18),
+                    0 28px 55px -10px rgba(0,0,0,0.85);
+            }
+            50% {
+                box-shadow:
+                    0 0 0 2px #15F4C7,
+                    0 0 70px  rgba(21,244,199,0.72),
+                    0 0 160px rgba(21,244,199,0.32),
+                    0 28px 55px -10px rgba(0,0,0,0.85);
+            }
+        }
+
+        .champion-card          { animation: champ-pulse 2.6s ease-in-out infinite; }
+        .champion-card.is-wild  { animation: wild-pulse  2.6s ease-in-out infinite; }
+
+        /* ── Wild badge ─────────────────────────────────────────────── */
+        .wild-badge {
+            display: none;
+            position: absolute; top: 16px; left: 16px; z-index: 10;
+            background: #15F4C7; color: #060d05;
+            font-size: 0.65rem; font-weight: 900; letter-spacing: 0.14em;
+            text-transform: uppercase; padding: 5px 12px; border-radius: 5px;
+        }
+        body.is-wild .wild-badge { display: block; }
+
+        /* ── Card image / colour grading ────────────────────────────── */
+        .layer-warm::after {
+            content: ''; position: absolute; inset: 0;
+            background: rgba(236,88,56,0.14); mix-blend-mode: color; pointer-events: none;
+        }
+
+        /* ── Path cards (beaten items) ──────────────────────────────── */
+        .path-track {
+            display: flex;
+            align-items: center;
+            gap: 0;
+        }
+        .path-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+        }
+        .path-card-wrap {
+            width: 105px; height: 158px;
+            border-radius: 8px;
+            overflow: hidden;
+            position: relative;
+            outline: 1px solid rgba(255,255,255,0.06);
+            flex-shrink: 0;
+        }
+        /* Beaten items: heavily dimmed and desaturated */
+        .path-card-img {
+            position: absolute; inset: 0;
+            background-size: cover; background-position: center;
+            filter: grayscale(0.75) brightness(0.45);
+        }
+        .path-card-overlay {
+            position: absolute; inset: 0;
+            background: linear-gradient(to top, rgba(0,0,0,0.92) 0%, rgba(0,0,0,0.55) 45%, transparent 100%);
+        }
+        .path-card-title {
+            position: absolute; bottom: 0; left: 0; right: 0;
+            padding: 8px 10px 10px;
+            font-size: 0.72rem; font-weight: 700;
+            color: rgba(250,255,254,0.60); line-height: 1.2;
+        }
+        .path-round-label {
+            font-size: 0.65rem; font-weight: 700; letter-spacing: 0.14em;
+            text-transform: uppercase; color: rgba(250,255,254,0.30);
+        }
+
+        /* Arrow between path items */
+        .path-arrow {
+            width: 36px; flex-shrink: 0;
+            display: flex; align-items: center; justify-content: center;
+            padding-bottom: 28px; /* align with card mid, above label */
+            color: rgba(250,255,254,0.18);
+            font-size: 1rem;
+        }
+
+        /* ── Entrance animations ────────────────────────────────────── */
+        .reveal-fade-up {
+            opacity: 0; transform: translateY(24px);
+            transition: opacity 0.75s cubic-bezier(0.16,1,0.3,1), transform 0.75s cubic-bezier(0.16,1,0.3,1);
+        }
+        .reveal-scale-in {
+            opacity: 0; transform: scale(0.88);
+            transition: opacity 0.8s cubic-bezier(0.16,1,0.3,1), transform 0.8s cubic-bezier(0.16,1,0.3,1);
+        }
+        .is-loaded .reveal-fade-up  { opacity: 1; transform: translateY(0); }
+        .is-loaded .reveal-scale-in { opacity: 1; transform: scale(1); }
+
+        .d-100 { transition-delay: 100ms; }
+        .d-200 { transition-delay: 200ms; }
+        .d-300 { transition-delay: 300ms; }
+        .d-500 { transition-delay: 500ms; }
+        .d-600 { transition-delay: 600ms; }
+        .d-700 { transition-delay: 700ms; }
+        .d-800 { transition-delay: 800ms; }
+        .d-900 { transition-delay: 900ms; }
+
+        /* ── Wild note ──────────────────────────────────────────────── */
+        .wild-note {
+            display: none;
+            font-size: 0.82rem; font-weight: 500; letter-spacing: 0.05em;
+            color: #15F4C7; margin-top: 6px;
+        }
+        body.is-wild .wild-note { display: block; }
+
+        /* ── Dev toggle ──────────────────────────────────────────────── */
+        #state-toggle {
+            position: fixed; bottom: 16px; right: 20px; z-index: 100;
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 11px; font-weight: 600; letter-spacing: 0.08em;
+            color: rgba(250,255,254,0.35);
+            background: rgba(8,14,7,0.50);
+            border: 1px solid rgba(250,255,254,0.10);
+            border-radius: 6px; padding: 5px 12px; cursor: pointer;
+            text-transform: uppercase;
+            transition: color 0.2s, border-color 0.2s;
+        }
+        #state-toggle:hover { color: rgba(250,255,254,0.75); border-color: rgba(250,255,254,0.25); }
+    </style>
+</head>
+
+<body class="flex flex-col antialiased" id="app-root">
+
+    <!-- ── LED background ──────────────────────────────────────────── -->
+    <div class="led-dots"        aria-hidden="true"></div>
+    <div class="led-orange"      aria-hidden="true"></div>
+    <div class="led-teal"        aria-hidden="true"></div>
+    <div class="led-void"        aria-hidden="true"></div>
+    <div class="champion-spotlight" aria-hidden="true"></div>
+
+    <!-- ── TOP BAR ──────────────────────────────────────────────────── -->
+    <header class="relative z-10 w-full px-12 py-5 flex justify-between items-center"
+            style="border-bottom:1px solid rgba(250,255,254,0.08)">
+
+        <div class="reveal-fade-up d-100"
+             style="background:rgba(8,14,7,0.60);backdrop-filter:blur(8px);
+                    border:1px solid rgba(250,255,254,0.08);border-radius:8px;padding:6px 16px;
+                    color:rgba(250,255,254,0.55);letter-spacing:0.14em;text-transform:uppercase;
+                    font-size:0.78rem;font-weight:600">
+            ROUND 4 OF 4 <span style="opacity:0.4;margin:0 6px">·</span> FINAL
+        </div>
+
+        <div class="reveal-fade-up d-200">
+            <span style="background:#ec5838;color:#fafffe;padding:6px 24px;border-radius:6px;
+                         font-weight:700;letter-spacing:0.14em;text-transform:uppercase;font-size:0.85rem;
+                         box-shadow:0 0 28px rgba(236,88,56,0.40)">
+                CHAMPION
+            </span>
+        </div>
+    </header>
+
+    <!-- ── MAIN AREA ─────────────────────────────────────────────────── -->
+    <main class="relative z-10 flex-1 flex flex-col items-center justify-center"
+          style="gap:0;padding-top:4px">
+
+        <!-- Hero text -->
+        <div class="reveal-fade-up d-200" style="margin-bottom:14px;text-align:center;line-height:1">
+            <p style="font-size:0.72rem;font-weight:700;letter-spacing:0.38em;
+                      text-transform:uppercase;color:rgba(250,255,254,0.35);margin:0 0 1px">
+                THE
+            </p>
+            <h1 style="font-size:4rem;font-weight:900;letter-spacing:0.02em;
+                       text-transform:uppercase;color:#ec5838;margin:0;line-height:0.95;
+                       text-shadow:
+                           0 0 30px rgba(236,88,56,0.70),
+                           0 0 70px rgba(236,88,56,0.35),
+                           0 0 130px rgba(236,88,56,0.15)">
+                CHAMPION
+            </h1>
+        </div>
+
+        <!-- Champion card -->
+        <div class="reveal-scale-in d-300" style="position:relative;margin-bottom:16px">
+
+            <div class="champion-card"
+                 id="champion-card"
+                 style="width:260px;height:360px;border-radius:14px;overflow:hidden;
+                        position:relative;outline:1px solid rgba(255,255,255,0.12);
+                        transition:animation 0.4s">
+
+                <!-- Wild badge (hidden by default) -->
+                <div class="wild-badge">WILD</div>
+
+                <!-- Image -->
+                <div class="layer-warm"
+                     style="position:absolute;inset:0;
+                            background:url('https://images.unsplash.com/photo-1533167649158-6d508895b680?q=80&w=800&auto=format&fit=crop') center/cover no-repeat;
+                            transform:scale(1.03)"></div>
+
+                <!-- Gradient -->
+                <div style="position:absolute;inset:0;
+                            background:linear-gradient(to top,rgba(0,0,0,0.95) 0%,rgba(0,0,0,0.55) 42%,transparent 100%)"></div>
+
+                <!-- Title pill -->
+                <div style="position:absolute;inset-inline:0;bottom:0;padding:18px 18px 22px">
+                    <div style="background:rgba(6,10,5,0.72);backdrop-filter:blur(10px);
+                                border:1px solid rgba(250,255,254,0.09);border-radius:10px;padding:12px 16px">
+                        <h2 style="font-size:1.9rem;font-weight:700;letter-spacing:-0.02em;margin:0 0 3px;
+                                   color:#fafffe;line-height:1.1">
+                            Thiruda Thiruda
+                        </h2>
+                        <p style="color:rgba(255,255,255,0.55);font-style:italic;font-size:0.85rem;margin:0">
+                            Tamil Action · 1993
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Wild note below card -->
+            <p class="wild-note" style="text-align:center">
+                No one owned this. A wild won.
+            </p>
+        </div>
+
+        <!-- ── Path of beaten items ──────────────────────────────────── -->
+        <div class="reveal-fade-up d-500">
+            <p style="font-size:0.65rem;font-weight:700;letter-spacing:0.20em;text-transform:uppercase;
+                      color:rgba(250,255,254,0.25);text-align:center;margin:0 0 12px">
+                PATH TO THE TOP
+            </p>
+            <div class="path-track">
+
+                <!-- R1 beaten -->
+                <div class="path-item">
+                    <div class="path-card-wrap">
+                        <div class="path-card-img"
+                             style="background-image:url('https://images.unsplash.com/photo-1478147427282-58a87a120781?q=80&w=400&auto=format&fit=crop')"></div>
+                        <div class="path-card-overlay"></div>
+                        <div class="path-card-title">Minsara Kanavu</div>
+                    </div>
+                    <span class="path-round-label">Round 1</span>
+                </div>
+
+                <div class="path-arrow">&#8594;</div>
+
+                <!-- R2 beaten -->
+                <div class="path-item">
+                    <div class="path-card-wrap">
+                        <div class="path-card-img"
+                             style="background-image:url('https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?q=80&w=400&auto=format&fit=crop')"></div>
+                        <div class="path-card-overlay"></div>
+                        <div class="path-card-title">Kadhalan</div>
+                    </div>
+                    <span class="path-round-label">Round 2</span>
+                </div>
+
+                <div class="path-arrow">&#8594;</div>
+
+                <!-- SEMI beaten -->
+                <div class="path-item">
+                    <div class="path-card-wrap">
+                        <div class="path-card-img"
+                             style="background-image:url('https://images.unsplash.com/photo-1536440136628-849c177e76a1?q=80&w=400&auto=format&fit=crop')"></div>
+                        <div class="path-card-overlay"></div>
+                        <div class="path-card-title">Mudhalvan</div>
+                    </div>
+                    <span class="path-round-label">Semi-Final</span>
+                </div>
+
+                <div class="path-arrow">&#8594;</div>
+
+                <!-- FINAL beaten -->
+                <div class="path-item">
+                    <div class="path-card-wrap">
+                        <div class="path-card-img"
+                             style="background-image:url('https://images.unsplash.com/photo-1440404653325-ab127d49abc1?q=80&w=400&auto=format&fit=crop')"></div>
+                        <div class="path-card-overlay"></div>
+                        <div class="path-card-title">Gentleman</div>
+                    </div>
+                    <span class="path-round-label">Final</span>
+                </div>
+
+            </div>
+        </div>
+
+    </main>
+
+
+    <!-- ── Dev toggle ───────────────────────────────────────────────── -->
+    <button id="state-toggle" onclick="toggleWild()">&#8594; Wild Champion</button>
+
+    <script>
+        requestAnimationFrame(() => setTimeout(() =>
+            document.getElementById('app-root').classList.add('is-loaded'), 80));
+
+        let isWild = false;
+
+        function toggleWild() {
+            isWild = !isWild;
+            document.body.classList.toggle('is-wild', isWild);
+            document.getElementById('champion-card').classList.toggle('is-wild', isWild);
+            document.getElementById('state-toggle').textContent =
+                isWild ? '\u2190 Normal Champion' : '\u2192 Wild Champion';
+        }
+    </script>
+</body>
+</html>

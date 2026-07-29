@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GameX — Board · Match Debate</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700;900&display=swap" rel="stylesheet">
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Space Grotesk', 'sans-serif'] },
+                }
+            }
+        }
+    </script>
+
+    <style>
+        /* ── Base ──────────────────────────────────────────────────────── */
+        *, *::before, *::after { box-sizing: border-box; }
+
+        body {
+            font-family: 'Space Grotesk', sans-serif;
+            width: 100vw;
+            height: 100vh;
+            overflow: hidden;
+            background-color: #060d05;
+            color: #fafffe;
+        }
+
+        /* ── LED dot grid background ──────────────────────────────────── */
+        /*
+         *  The dots themselves pulse — brightness rises and falls like LEDs
+         *  breathing. The colour gradient zones stay static; when dots brighten
+         *  the tinted dots in each zone become more visible, giving the "lit up"
+         *  feel without the colour blobs spreading.
+         */
+
+        /*  Layer 1: dot grid — pulses via opacity */
+        .led-dots {
+            position: absolute;
+            inset: 0;
+            background-image: radial-gradient(circle, rgba(250,255,254,0.28) 1.5px, transparent 1.5px);
+            background-size: 26px 26px;
+            z-index: 0;
+            animation: dots-breathe 6s ease-in-out infinite;
+        }
+
+        @keyframes dots-breathe {
+            0%, 100% { opacity: 0.55; }
+            50%       { opacity: 1;    }
+        }
+
+        /*  Layer 2: orange zone — static, colours the dots in that region */
+        .led-orange {
+            position: absolute;
+            inset: 0;
+            background:
+                radial-gradient(ellipse 95% 78% at 8% 92%,
+                    rgba(236,88,56,0.22)  0%,
+                    rgba(190,48,10,0.09) 38%,
+                    transparent          62%),
+                radial-gradient(ellipse 60% 50% at 65% 2%,
+                    rgba(200,60,18,0.11)  0%,
+                    transparent          55%);
+            z-index: 0;
+        }
+
+        /*  Layer 3: teal zone — static */
+        .led-teal {
+            position: absolute;
+            inset: 0;
+            background:
+                radial-gradient(ellipse 80% 65% at 94% 8%,
+                    rgba(21,244,199,0.16)  0%,
+                    rgba(8,180,155,0.06)  36%,
+                    transparent           60%),
+                radial-gradient(ellipse 42% 35% at 90% 72%,
+                    rgba(21,244,199,0.05)  0%,
+                    transparent           52%);
+            z-index: 0;
+        }
+
+        /*  Layer 4: dark center void */
+        .led-void {
+            position: absolute;
+            inset: 0;
+            background: radial-gradient(ellipse 60% 62% at 50% 50%,
+                rgba(4,9,3,0.94)   0%,
+                rgba(6,12,5,0.62) 44%,
+                transparent        72%);
+            z-index: 0;
+        }
+
+        /* ── Card colour-grading overlays ──────────────────────────────── */
+        .layer-warm::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: rgba(236,88,56,0.14);
+            mix-blend-mode: color;
+            pointer-events: none;
+        }
+        .layer-cool::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: rgba(21,244,199,0.14);
+            mix-blend-mode: color;
+            pointer-events: none;
+        }
+
+        /* ── VS Glow Badge animation ───────────────────────────────────── */
+        /*
+         * Adapted from GlowButton (shiny-button-1.tsx).
+         * Colors mapped to design tokens: #ec5838 (primary) / #15F4C7 (accent).
+         * Made circular. Animation runs continuously — no hover trigger needed
+         * since Board is a display-only TV surface.
+         */
+        .vs-spin {
+            animation: vs-speen 8s cubic-bezier(0.56, 0.15, 0.28, 0.86) infinite,
+                       vs-woah  4s ease-in-out infinite;
+        }
+
+        @keyframes vs-speen {
+            0%   { transform: rotate(10deg); }
+            50%  { transform: rotate(190deg); }
+            100% { transform: rotate(370deg); }
+        }
+        @keyframes vs-woah {
+            0%, 100% { transform: scale(1); }
+            50%      { transform: scale(0.75); }
+        }
+
+        /* ── Entrance animations ───────────────────────────────────────── */
+        .reveal-fade-up {
+            opacity: 0;
+            transform: translateY(36px);
+            transition: opacity 0.8s cubic-bezier(0.16,1,0.3,1),
+                        transform 0.8s cubic-bezier(0.16,1,0.3,1);
+        }
+        .reveal-scale-in {
+            opacity: 0;
+            transform: scale(0.55);
+            transition: opacity 0.6s cubic-bezier(0.34,1.56,0.64,1),
+                        transform 0.6s cubic-bezier(0.34,1.56,0.64,1);
+        }
+        .is-loaded .reveal-fade-up  { opacity: 1; transform: translateY(0); }
+        .is-loaded .reveal-scale-in { opacity: 1; transform: scale(1); }
+
+        .d-100  { transition-delay:  100ms; }
+        .d-200  { transition-delay:  200ms; }
+        .d-300  { transition-delay:  300ms; }
+        .d-400  { transition-delay:  400ms; }
+        .d-600  { transition-delay:  600ms; }
+        .d-700  { transition-delay:  700ms; }
+        .d-800  { transition-delay:  800ms; }
+        .d-900  { transition-delay:  900ms; }
+        .d-1000 { transition-delay: 1000ms; }
+        .d-1100 { transition-delay: 1100ms; }
+    </style>
+</head>
+
+<body class="flex flex-col antialiased" id="app-root">
+
+    <!-- ── LED dot gradient background ─────────────────────────────── -->
+    <div class="led-dots"  aria-hidden="true"></div>
+    <div class="led-orange" aria-hidden="true"></div>
+    <div class="led-teal"   aria-hidden="true"></div>
+    <div class="led-void"   aria-hidden="true"></div>
+
+    <!-- ── TOP BAR ──────────────────────────────────────────────────── -->
+    <header class="relative z-10 w-full px-12 py-6 flex justify-between items-center"
+            style="border-bottom:1px solid rgba(250,255,254,0.08)">
+
+        <div class="reveal-fade-up d-100"
+             style="background:rgba(8,14,7,0.60);backdrop-filter:blur(8px);
+                    border:1px solid rgba(250,255,254,0.08);border-radius:8px;padding:6px 16px;
+                    color:rgba(250,255,254,0.55);letter-spacing:0.14em;text-transform:uppercase;font-size:0.78rem;font-weight:600">
+            ROUND 2 OF 3 <span style="opacity:0.4;margin:0 6px">·</span> MATCH 1 OF 2
+        </div>
+
+        <div class="reveal-fade-up d-200">
+            <span style="background:#ec5838;color:#fafffe;padding:6px 20px;border-radius:6px;
+                         font-weight:700;letter-spacing:0.12em;text-transform:uppercase;font-size:0.8rem;
+                         box-shadow:0 0 22px rgba(236,88,56,0.30)">
+                DEBATE
+            </span>
+        </div>
+    </header>
+
+    <!-- ── MAIN AREA ─────────────────────────────────────────────────── -->
+    <main class="relative z-10 flex-1 flex items-center justify-center">
+
+        <!--
+            SVG filter defs for VS glow badge.
+            Adapted directly from shiny-button-1.tsx (GlowButton).
+            Placed here so they're near the element using them.
+        -->
+        <svg style="position:absolute;width:0;height:0;overflow:hidden" aria-hidden="true">
+            <defs>
+                <!-- Alpha boost × 9 — sharpens outer glow halo -->
+                <filter id="vs-f1" width="300%" x="-100%" height="300%" y="-100%">
+                    <feColorMatrix values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 9 0"/>
+                </filter>
+                <!-- Alpha boost × 3 — mid-ring glow -->
+                <filter id="vs-f2" width="300%" x="-100%" height="300%" y="-100%">
+                    <feColorMatrix values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 3 0"/>
+                </filter>
+                <!-- Slight RGB bleed × 2 — inner warm-cool rim -->
+                <filter id="vs-f3" width="300%" x="-100%" height="300%" y="-100%">
+                    <feColorMatrix values="1 0 0 0.2 0  0 1 0 0.2 0  0 0 1 0.2 0  0 0 0 2 0"/>
+                </filter>
+            </defs>
+        </svg>
+
+        <!-- Cards row: Card A — VS Badge — Card B (all flex items, VS is truly centred) -->
+        <div class="flex items-center">
+
+            <!-- ── Card A: Warm / Action ─────────────────────────────── -->
+            <div class="reveal-fade-up d-300"
+                 style="width:340px;height:510px;position:relative;border-radius:12px;
+                        overflow:hidden;box-shadow:0 20px 40px -10px rgba(0,0,0,0.75);
+                        outline:1px solid rgba(255,255,255,0.10);flex-shrink:0;
+                        transition:transform 0.7s ease">
+                <!-- Cinematic warm image -->
+                <div class="layer-warm"
+                     style="position:absolute;inset:0;
+                            background:url('https://images.unsplash.com/photo-1533167649158-6d508895b680?q=80&w=800&auto=format&fit=crop') center/cover no-repeat;
+                            transform:scale(1.04)"></div>
+                <!-- Text gradient -->
+                <div style="position:absolute;inset:0;
+                            background:linear-gradient(to top,rgba(0,0,0,0.96) 0%,rgba(0,0,0,0.68) 38%,transparent 100%)"></div>
+                <!-- Title pill card -->
+                <div style="position:absolute;inset-inline:0;bottom:0;padding:20px 20px 24px">
+                    <div style="background:rgba(6,10,5,0.70);backdrop-filter:blur(10px);
+                                border:1px solid rgba(250,255,254,0.09);border-radius:10px;padding:14px 18px">
+                        <h2 style="font-size:2.2rem;font-weight:700;letter-spacing:-0.02em;margin:0 0 3px;color:#fafffe;line-height:1.1">
+                            Thiruda Thiruda
+                        </h2>
+                        <p style="color:rgba(255,255,255,0.58);font-style:italic;font-size:0.9rem;margin:0">
+                            Tamil Action · 1993
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ── VS Glow Badge (GlowButton adapted, circular) ───────── -->
+            <!--
+                Structure mirrors shiny-button-1.tsx:
+                  outer glow div  →  filter:blur(2em) url(#vs-f1)
+                  mid glow div    →  filter:blur(0.3em) url(#vs-f2)
+                  border pad div  →  p-0.5 background
+                    inner glow    →  filter:blur(2px) url(#vs-f3)
+                    surface       →  dark circle with VS text
+                Each glow layer contains a .vs-spin child (inset -150%)
+                whose linear-gradient is the orange→teal sweep.
+            -->
+            <div class="reveal-scale-in d-600"
+                 style="flex-shrink:0;width:120px;display:flex;align-items:center;justify-content:center;z-index:20">
+
+                <!-- Clip wrapper: hard-stops any glow from leaking beyond this box -->
+                <div style="position:relative;width:90px;height:90px;overflow:hidden;border-radius:50%">
+
+                    <!-- Outer halo: tight inset + small blur — stays inside the circle -->
+                    <div style="position:absolute;inset:-6px;border-radius:50%;overflow:hidden;
+                                filter:blur(6px) url(#vs-f1);opacity:0.42">
+                        <div class="vs-spin"
+                             style="position:absolute;inset:-150%;
+                                    background:linear-gradient(90deg,#ec5838 30%,#0000 50%,#15F4C7 70%)"></div>
+                    </div>
+
+                    <!-- Mid ring: 1px inset, minimal blur -->
+                    <div style="position:absolute;inset:-2px;border-radius:50%;overflow:hidden;
+                                filter:blur(3px) url(#vs-f2);opacity:0.45">
+                        <div class="vs-spin"
+                             style="position:absolute;inset:-150%;
+                                    background:linear-gradient(90deg,#f97a5a 20%,#0000 45% 55%,#4cf5d7 80%)"></div>
+                    </div>
+
+                    <!-- Border padding layer -->
+                    <div style="position:absolute;inset:0;border-radius:50%;padding:2.5px;background:rgba(0,0,0,0.45)">
+
+                        <!-- Inner rim: sub-pixel blur only -->
+                        <div style="position:absolute;inset:-1px;border-radius:50%;overflow:hidden;
+                                    filter:blur(1.5px) url(#vs-f3);opacity:0.30">
+                            <div class="vs-spin"
+                                 style="position:absolute;inset:-150%;
+                                        background:linear-gradient(90deg,#fca090 30%,#0000 45% 55%,#90f0e4 70%)"></div>
+                        </div>
+
+                        <!-- Dark surface -->
+                        <div style="width:100%;height:100%;border-radius:50%;background:#111215;
+                                    display:flex;align-items:center;justify-content:center;position:relative;z-index:1">
+                            <span style="color:#fafffe;font-size:1.6rem;font-weight:900;font-style:italic;letter-spacing:-1px">
+                                VS
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ── Card B: Cool / Romance ─────────────────────────────── -->
+            <div class="reveal-fade-up d-400"
+                 style="width:340px;height:510px;position:relative;border-radius:12px;
+                        overflow:hidden;box-shadow:0 20px 40px -10px rgba(0,0,0,0.75);
+                        outline:1px solid rgba(255,255,255,0.10);flex-shrink:0;
+                        transition:transform 0.7s ease">
+                <!-- Cinematic cool image -->
+                <div class="layer-cool"
+                     style="position:absolute;inset:0;
+                            background:url('https://images.unsplash.com/photo-1478147427282-58a87a120781?q=80&w=800&auto=format&fit=crop') center/cover no-repeat;
+                            transform:scale(1.04)"></div>
+                <!-- Text gradient -->
+                <div style="position:absolute;inset:0;
+                            background:linear-gradient(to top,rgba(0,0,0,0.96) 0%,rgba(0,0,0,0.68) 38%,transparent 100%)"></div>
+                <!-- Title pill card -->
+                <div style="position:absolute;inset-inline:0;bottom:0;padding:20px 20px 24px">
+                    <div style="background:rgba(6,10,5,0.70);backdrop-filter:blur(10px);
+                                border:1px solid rgba(250,255,254,0.09);border-radius:10px;padding:14px 18px">
+                        <h2 style="font-size:2.2rem;font-weight:700;letter-spacing:-0.02em;margin:0 0 3px;color:#fafffe;line-height:1.1">
+                            Minsara Kanavu
+                        </h2>
+                        <p style="color:rgba(255,255,255,0.58);font-style:italic;font-size:0.9rem;margin:0">
+                            Tamil Romance · 1997
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+        </div><!-- /cards row -->
+    </main>
+
+    <!-- ── BOTTOM BAR ────────────────────────────────────────────────── -->
+    <footer class="relative z-10 w-full flex items-center px-12"
+            style="height:96px;border-top:1px solid rgba(250,255,254,0.08)">
+
+        <!-- "PLAYERS" label — left anchor -->
+        <div class="reveal-fade-up d-700"
+             style="flex-shrink:0;width:96px;">
+            <span style="display:inline-block;color:rgba(250,255,254,0.80);letter-spacing:0.14em;
+                         text-transform:uppercase;font-size:0.72rem;font-weight:700;
+                         border:1px solid rgba(250,255,254,0.22);border-radius:6px;
+                         padding:4px 10px;background:rgba(8,14,7,0.55);backdrop-filter:blur(6px)">
+                PLAYERS
+            </span>
+        </div>
+
+        <!-- Player dots — centred across the remaining space -->
+        <div style="flex:1;display:flex;justify-content:center;align-items:center">
+            <div style="display:flex;gap:48px;align-items:center;
+                        background:rgba(8,14,7,0.60);backdrop-filter:blur(8px);
+                        border:1px solid rgba(250,255,254,0.08);border-radius:14px;
+                        padding:10px 28px">
+
+                <div class="reveal-fade-up d-700" style="display:flex;flex-direction:column;align-items:center;gap:6px">
+                    <div style="width:36px;height:36px;border-radius:50%;background:#FF6B6B;
+                                box-shadow:0 0 14px rgba(255,107,107,0.40)"></div>
+                    <span style="font-size:12px;font-weight:500;color:rgba(250,255,254,0.85)">Raahul</span>
+                </div>
+
+                <div class="reveal-fade-up d-800" style="display:flex;flex-direction:column;align-items:center;gap:6px">
+                    <div style="width:36px;height:36px;border-radius:50%;background:#4ECDC4;
+                                box-shadow:0 0 14px rgba(78,205,196,0.40)"></div>
+                    <span style="font-size:12px;font-weight:500;color:rgba(250,255,254,0.85)">Padma</span>
+                </div>
+
+                <div class="reveal-fade-up d-900" style="display:flex;flex-direction:column;align-items:center;gap:6px">
+                    <div style="width:36px;height:36px;border-radius:50%;background:#FFE66D;
+                                box-shadow:0 0 14px rgba(255,230,109,0.40)"></div>
+                    <span style="font-size:12px;font-weight:500;color:rgba(250,255,254,0.85)">Sri</span>
+                </div>
+
+                <div class="reveal-fade-up d-1000" style="display:flex;flex-direction:column;align-items:center;gap:6px">
+                    <div style="width:36px;height:36px;border-radius:50%;background:#A8E6CF;
+                                box-shadow:0 0 14px rgba(168,230,207,0.40)"></div>
+                    <span style="font-size:12px;font-weight:500;color:rgba(250,255,254,0.85)">Derin</span>
+                </div>
+
+                <div class="reveal-fade-up d-1100" style="display:flex;flex-direction:column;align-items:center;gap:6px">
+                    <div style="width:36px;height:36px;border-radius:50%;background:#C3A6FF;
+                                box-shadow:0 0 14px rgba(195,166,255,0.40)"></div>
+                    <span style="font-size:12px;font-weight:500;color:rgba(250,255,254,0.85)">Akshi</span>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- Right spacer to balance label -->
+        <div style="width:96px;flex-shrink:0"></div>
+    </footer>
+
+    <script>
+        // Trigger entrance animations after first paint
+        requestAnimationFrame(() => setTimeout(() =>
+            document.getElementById('app-root').classList.add('is-loaded'), 80));
+    </script>
+</body>
+</html>

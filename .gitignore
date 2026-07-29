@@ -1,6 +1,12 @@
+# macOS
+.DS_Store
+
 # BMAD
 _bmad/
 _bmad-output/
 
 # Claude
 .claude/
+
+.aidesigner/
+

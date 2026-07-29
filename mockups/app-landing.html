@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>GameX - Home</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700;900&display=swap" rel="stylesheet">
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['"Space Grotesk"', 'sans-serif'] },
+                    colors: {
+                        page: '#080808',
+                        textMain: '#fafffe',
+                        primary: '#ec5838',
+                        accent: '#15F4C7',
+                    },
+                }
+            }
+        }
+    </script>
+    <style>
+        :root {
+            --bg-page: #080808;
+            --text-main: #fafffe;
+            --primary: #ec5838;
+            --accent: #15F4C7;
+        }
+
+        body {
+            background-color: var(--bg-page);
+            color: var(--text-main);
+            overflow-x: hidden;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            overscroll-behavior: none;
+        }
+
+        /* ── Coloured LED dot layers ──────────────────────────────────
+           Two separate dot grids, each masked to its colour zone.
+           Orange anchors bottom-left, teal anchors top-right.
+           Both blurred slightly so they read as texture, not noise.
+        ─────────────────────────────────────────────────────────── */
+        .led-orange {
+            position: absolute; inset: -5%;
+            background-image: radial-gradient(circle, #ec5838 2px, transparent 2.1px);
+            background-size: 24px 24px;
+            opacity: 0.85;
+            -webkit-mask-image: radial-gradient(ellipse 160% 140% at 100% 100%, black 15%, black 40%, transparent 72%);
+            mask-image:         radial-gradient(ellipse 160% 140% at 100% 100%, black 15%, black 40%, transparent 72%);
+        }
+        .led-teal {
+            position: absolute; inset: -5%;
+            background-image: radial-gradient(circle, #15F4C7 2px, transparent 2.1px);
+            background-size: 24px 24px;
+            opacity: 0.85;
+            -webkit-mask-image: radial-gradient(ellipse 160% 140% at 0% 0%, black 15%, black 40%, transparent 72%);
+            mask-image:         radial-gradient(ellipse 160% 140% at 0% 0%, black 15%, black 40%, transparent 72%);
+        }
+
+        /* Entrance animation */
+        .reveal {
+            opacity: 0;
+            transform: translateY(20px);
+            transition: opacity 0.8s cubic-bezier(0.16,1,0.3,1), transform 0.8s cubic-bezier(0.16,1,0.3,1);
+        }
+        .reveal.is-visible { opacity: 1; transform: translateY(0); }
+
+        /* Button states */
+        .btn-primary { transition: all 0.2s ease; }
+        .btn-primary:active { transform: scale(0.97); background-color: #d64a2d; }
+
+        .btn-outline { background-color: transparent; transition: all 0.2s ease; }
+        .btn-outline:active { transform: scale(0.97); background-color: rgba(236,88,56,0.10); }
+
+        @media (hover: hover) {
+            .btn-primary:hover { box-shadow: 0 0 32px rgba(236,88,56,0.40); }
+            .btn-outline:hover  { background-color: rgba(236,88,56,0.06); }
+        }
+    </style>
+</head>
+
+<body class="flex flex-col min-h-[100dvh] selection:bg-primary selection:text-white">
+
+    <!-- Background system -->
+    <div class="fixed inset-0 z-0 pointer-events-none overflow-hidden" id="bg-system">
+        <!-- Coloured LED dot layers -->
+        <div class="led-orange" id="dot-orange"></div>
+        <div class="led-teal" id="dot-teal"></div>
+
+        <!-- Soft edge fade only -->
+        <div class="absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_30%,var(--bg-page)_95%)]"></div>
+    </div>
+
+    <!-- Content -->
+    <main class="relative z-10 w-full max-w-[390px] mx-auto flex-grow flex flex-col items-center justify-center px-5 h-[100dvh]">
+
+        <!-- Content card -->
+        <div class="reveal w-full rounded-[20px] px-7 py-10 flex flex-col items-center"
+             style="background: #0e0e0e; border: 1px solid rgba(250,255,254,0.18);
+                    box-shadow: 0 0 0 1px rgba(0,0,0,0.8), 0 16px 56px rgba(0,0,0,0.7);">
+
+            <!-- Identity -->
+            <section class="flex flex-col items-center text-center mb-8 w-full shrink-0">
+                <h1 class="reveal text-textMain text-[3.8rem] font-black leading-none mb-3 tracking-[-0.04em] uppercase"
+                    style="transform:scaleX(1.05)">GameX</h1>
+                <h2 class="reveal text-textMain/80 text-[1rem] italic font-medium tracking-wide mb-3">
+                    Argue. Defend. Deceive.
+                </h2>
+                <p class="reveal text-textMain/60 text-[0.75rem] max-w-[240px] leading-relaxed mx-auto font-medium">
+                    A secret-assignment debate tournament for 3–8 players
+                </p>
+            </section>
+
+            <!-- Divider -->
+            <div class="reveal w-full h-[1px] bg-textMain/[0.10] mb-8 shrink-0"></div>
+
+            <!-- Create Room -->
+            <section class="reveal flex flex-col items-center w-full mb-7 shrink-0">
+                <h3 class="text-textMain/70 text-[0.62rem] uppercase tracking-[0.25em] font-bold mb-4">
+                    Host A Game
+                </h3>
+                <button class="btn-primary w-full h-[56px] bg-primary text-white font-bold text-[1.1rem]
+                               rounded-[12px] shadow-[0_0_24px_rgba(236,88,56,0.30)]
+                               flex items-center justify-center">
+                    Create Room
+                </button>
+                <p class="text-textMain/55 text-[0.72rem] mt-3 tracking-wide">
+                    You'll get a shareable room code
+                </p>
+            </section>
+
+            <!-- OR separator -->
+            <div class="reveal flex items-center w-full mb-7 shrink-0">
+                <div class="flex-grow h-[1px] bg-textMain/[0.10]"></div>
+                <span class="px-5 text-textMain/55 text-[0.65rem] uppercase tracking-[0.2em] font-bold">Or</span>
+                <div class="flex-grow h-[1px] bg-textMain/[0.10]"></div>
+            </div>
+
+            <!-- Join Room -->
+            <section class="reveal flex flex-col items-center w-full shrink-0">
+                <h3 class="text-textMain/70 text-[0.62rem] uppercase tracking-[0.25em] font-bold mb-5">
+                    Join A Game
+                </h3>
+                <div class="w-full flex flex-col gap-4">
+                    <input type="text"
+                           placeholder="Enter room code"
+                           class="w-full h-[52px] bg-[rgba(8,8,8,0.60)] border border-textMain/[0.16]
+                                  rounded-[10px] text-center font-bold text-lg tracking-[0.25em] uppercase
+                                  text-textMain placeholder:text-textMain/30 placeholder:tracking-widest
+                                  placeholder:font-medium placeholder:uppercase placeholder:normal-case
+                                  focus:outline-none focus:border-primary/70 focus:bg-page transition-colors"
+                           autocomplete="off">
+                    <button class="btn-outline w-full h-[52px] border-[1.5px] border-primary text-primary
+                                   font-bold text-[1.1rem] rounded-[10px] flex items-center justify-center">
+                        Join Room
+                    </button>
+                </div>
+                <p class="text-textMain/55 text-[0.72rem] mt-4 tracking-wide">No account needed</p>
+            </section>
+
+        </div><!-- /card -->
+    </main>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // Staggered entrance
+            document.querySelectorAll('.reveal').forEach((el, i) => {
+                setTimeout(() => el.classList.add('is-visible'), 150 + i * 90);
+            });
+
+            // Dots are static — no parallax
+        });
+    </script>
+</body>
+</html>
