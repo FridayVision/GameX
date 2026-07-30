@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>GameX – Join Room</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700;900&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: { extend: {
+                fontFamily: { sans:['"Space Grotesk"','sans-serif'] },
+                colors: { page:'#080808', textMain:'#fafffe', primary:'#ec5838', accent:'#15F4C7' }
+            }}
+        }
+    </script>
+    <style>
+        body { background:#080808; color:#fafffe; overflow:hidden; -webkit-font-smoothing:antialiased; overscroll-behavior:none; }
+
+        .led-orange { position:absolute;inset:-5%; background-image:radial-gradient(circle,#ec5838 2px,transparent 2.1px); background-size:24px 24px; opacity:.85; -webkit-mask-image:radial-gradient(ellipse 160% 140% at 100% 100%,black 15%,black 40%,transparent 72%); mask-image:radial-gradient(ellipse 160% 140% at 100% 100%,black 15%,black 40%,transparent 72%); }
+        .led-teal   { position:absolute;inset:-5%; background-image:radial-gradient(circle,#15F4C7 2px,transparent 2.1px); background-size:24px 24px; opacity:.85; -webkit-mask-image:radial-gradient(ellipse 160% 140% at 0% 0%,black 15%,black 40%,transparent 72%); mask-image:radial-gradient(ellipse 160% 140% at 0% 0%,black 15%,black 40%,transparent 72%); }
+
+        /* Colour dots */
+        .cdot {
+            width: 42px; height: 42px;
+            border-radius: 50%;
+            cursor: pointer;
+            flex-shrink: 0;
+            transition: transform 0.14s cubic-bezier(.16,1,.3,1),
+                        outline-offset 0.14s,
+                        opacity 0.14s;
+            position: relative;
+        }
+        .cdot:not(.taken):hover { transform: scale(1.10); }
+        .cdot:not(.taken):active { transform: scale(0.95); }
+
+        .cdot.selected {
+            transform: scale(1.14);
+            outline: 3px solid rgba(250,255,254,0.90);
+            outline-offset: 4px;
+        }
+        /* Check mark on selected */
+        .cdot.selected::after {
+            content: '';
+            position: absolute; inset: 0;
+            border-radius: 50%;
+            background: rgba(0,0,0,0.28);
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='20 6 9 17 4 12'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: center;
+            background-size: 55%;
+        }
+
+        .cdot.taken {
+            opacity: 0.18;
+            filter: grayscale(0.80);
+            cursor: not-allowed;
+        }
+        /* Slash on taken */
+        .cdot.taken::after {
+            content: '';
+            position: absolute; inset: 0;
+            border-radius: 50%;
+            background: rgba(8,8,8,0.55);
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cline x1='5' y1='5' x2='19' y2='19' stroke='rgba(250,255,254,0.6)' stroke-width='2.5' stroke-linecap='round'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: center;
+            background-size: 60%;
+        }
+
+        /* Buttons */
+        .btn-primary { cursor:pointer; transition:all .18s; }
+        .btn-primary:not(:disabled):active { transform:scale(.97); }
+        .btn-primary:disabled { opacity:.26; cursor:not-allowed; }
+        @media(hover:hover){ .btn-primary:not(:disabled):hover { box-shadow:0 0 28px rgba(236,88,56,.40); } }
+
+        /* Name input character counter */
+        #char-count { transition: color 0.2s; }
+    </style>
+</head>
+
+<body class="h-[100dvh]">
+
+    <!-- Background -->
+    <div class="fixed inset-0 z-0 pointer-events-none overflow-hidden">
+        <div class="led-orange"></div>
+        <div class="led-teal"></div>
+        <div class="absolute inset-0" style="background:radial-gradient(ellipse at center,transparent 30%,#080808 95%)"></div>
+    </div>
+
+    <div class="relative z-10 h-[100dvh] flex flex-col px-4 pt-6 pb-4 overflow-hidden">
+
+        <!-- Top card -->
+        <div class="w-full max-w-[390px] mx-auto shrink-0 mb-3">
+            <div class="rounded-[16px] px-5 py-4"
+                 style="background:#0e0e0e; border:1px solid rgba(250,255,254,.18);
+                        box-shadow:0 0 0 1px rgba(0,0,0,.8),0 8px 32px rgba(0,0,0,.60)">
+                <button class="flex items-center gap-2 text-textMain/50 text-[.82rem] font-semibold
+                               hover:text-textMain/80 transition-colors mb-3 group">
+                    <span class="w-6 h-6 rounded-full border border-textMain/18 flex items-center justify-center
+                                 group-hover:border-textMain/40 transition-colors">
+                        <svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                            <path d="M19 12H5M12 5l-7 7 7 7"/>
+                        </svg>
+                    </span>
+                    Back
+                </button>
+                <h1 class="text-textMain text-[1.85rem] font-black leading-none tracking-[-0.03em] uppercase mb-1.5">
+                    Join Room
+                </h1>
+                <p class="text-textMain/35 text-[.70rem] font-medium">
+                    Room <span style="color:#ec5838;font-weight:700">7349</span>
+                    <span class="text-textMain/20 mx-1.5">·</span>
+                    <span class="text-textMain/30">Bollywood Movies</span>
+                </p>
+            </div>
+        </div>
+
+        <!-- Main card -->
+        <div class="w-full max-w-[390px] mx-auto flex-1 flex flex-col rounded-[20px] overflow-hidden min-h-0"
+             style="background:#0e0e0e; border:1px solid rgba(250,255,254,.18);
+                    box-shadow:0 0 0 1px rgba(0,0,0,.8),0 16px 56px rgba(0,0,0,.70)">
+
+            <div class="flex-1 overflow-y-auto px-6 pt-7 pb-4" style="-webkit-overflow-scrolling:touch;scrollbar-width:none">
+
+                <!-- Name -->
+                <section class="mb-8">
+                    <div class="flex items-center justify-between mb-2.5">
+                        <label class="text-textMain/50 text-[.56rem] uppercase tracking-[.26em] font-bold">
+                            Your Name
+                        </label>
+                        <span id="char-count" class="text-textMain/28 text-[.58rem] font-bold">0 / 25</span>
+                    </div>
+                    <input type="text" id="name-input"
+                           maxlength="25"
+                           placeholder="What do people call you?"
+                           class="w-full h-[52px] bg-[rgba(8,8,8,0.65)] border border-textMain/[.14]
+                                  rounded-[10px] px-4 font-bold text-[1rem]
+                                  text-textMain placeholder:text-textMain/24 placeholder:font-medium
+                                  focus:outline-none focus:border-primary/65 transition-colors"
+                           autocomplete="off" autocorrect="off" autocapitalize="words" spellcheck="false">
+                </section>
+
+                <!-- Colour -->
+                <section class="mb-8">
+                    <div class="flex items-center justify-between mb-4">
+                        <label class="text-textMain/50 text-[.56rem] uppercase tracking-[.26em] font-bold">
+                            Your Colour
+                        </label>
+                        <span id="colour-hint" class="text-textMain/28 text-[.60rem] font-medium">Pick one</span>
+                    </div>
+
+                    <!-- 7 dots in a row -->
+                    <div id="colour-row" class="flex items-center justify-between gap-2">
+                        <!-- rendered by JS -->
+                    </div>
+
+                    <!-- taken note -->
+                    <p class="text-textMain/22 text-[.60rem] mt-3.5 text-center">
+                        Greyed out colours are taken by others in the room
+                    </p>
+                </section>
+
+                <!-- Preview (shows once both name + colour picked) -->
+                <div id="preview" class="hidden mb-2">
+                    <div class="h-px bg-textMain/[.07] mb-5"></div>
+                    <p class="text-textMain/38 text-[.56rem] uppercase tracking-[.26em] font-bold mb-3 text-center">Preview</p>
+                    <div class="flex items-center justify-center gap-3">
+                        <div id="preview-dot"
+                             class="w-11 h-11 rounded-full border-2 flex items-center justify-center font-black text-lg"
+                             style="border-color:transparent"></div>
+                        <span id="preview-name" class="font-bold text-[1.05rem] text-textMain/85"></span>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Join button -->
+            <div class="shrink-0 border-t border-textMain/[.07] px-6 pt-4 pb-5">
+                <button id="join-btn" disabled
+                        class="btn-primary w-full h-[52px] bg-primary text-white font-bold text-[1rem]
+                               rounded-[12px] shadow-[0_0_20px_rgba(236,88,56,.24)]
+                               flex items-center justify-center gap-2">
+                    Join Room
+                    <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                        <path d="M5 12h14M12 5l7 7-7 7"/>
+                    </svg>
+                </button>
+                <p class="text-textMain/22 text-[.62rem] text-center mt-2">No account needed</p>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        // Orange (#ec5838) is reserved for the host — not shown here
+        const COLOURS = [
+            { id:'teal',   hex:'#15F4C7' },
+            { id:'purple', hex:'#a855f7' },
+            { id:'pink',   hex:'#f472b6' },
+            { id:'yellow', hex:'#facc15' },
+            { id:'blue',   hex:'#38bdf8' },
+            { id:'lime',   hex:'#a3e635' },
+            { id:'red',    hex:'#ff2d55' },
+        ];
+
+        // Mock: these are already taken by players who joined earlier
+        const TAKEN = new Set(['teal', 'purple']);
+
+        let selectedId = null;
+
+        // ── Build colour row ────────────────────────────────────────
+        const row = document.getElementById('colour-row');
+        COLOURS.forEach(col => {
+            const dot = document.createElement('div');
+            dot.className = 'cdot' + (TAKEN.has(col.id) ? ' taken' : '');
+            dot.id = 'dot-' + col.id;
+            dot.style.background = col.hex;
+            if (!TAKEN.has(col.id)) {
+                dot.addEventListener('click', () => selectColour(col.id));
+            }
+            row.appendChild(dot);
+        });
+
+        // ── Colour selection ────────────────────────────────────────
+        function selectColour(id) {
+            if (TAKEN.has(id)) return;
+
+            // Deselect previous
+            if (selectedId) {
+                document.getElementById('dot-' + selectedId).classList.remove('selected');
+            }
+            selectedId = selectedId === id ? null : id; // toggle off if same
+            if (selectedId) {
+                document.getElementById('dot-' + selectedId).classList.add('selected');
+            }
+
+            document.getElementById('colour-hint').textContent =
+                selectedId ? '✓ Selected' : 'Pick one';
+            document.getElementById('colour-hint').style.color =
+                selectedId ? '#15F4C7' : '';
+
+            updateState();
+        }
+
+        // ── Name input ──────────────────────────────────────────────
+        const nameInput = document.getElementById('name-input');
+        nameInput.addEventListener('input', () => {
+            const len = nameInput.value.trim().length;
+            const counter = document.getElementById('char-count');
+            counter.textContent = `${nameInput.value.length} / 25`;
+            counter.style.color = nameInput.value.length > 20
+                ? 'rgba(236,88,56,0.80)'
+                : '';
+            updateState();
+        });
+
+        // ── State: enable join + show preview ──────────────────────
+        function updateState() {
+            const name = nameInput.value.trim();
+            const ready = name.length > 0 && selectedId !== null;
+            document.getElementById('join-btn').disabled = !ready;
+
+            const preview = document.getElementById('preview');
+            if (ready) {
+                preview.classList.remove('hidden');
+                const col = COLOURS.find(c => c.id === selectedId);
+                const pdot = document.getElementById('preview-dot');
+                pdot.style.background    = col.hex + '22';
+                pdot.style.borderColor   = col.hex;
+                pdot.style.color         = col.hex;
+                pdot.textContent         = name[0].toUpperCase();
+                document.getElementById('preview-name').textContent = name;
+            } else {
+                preview.classList.add('hidden');
+            }
+        }
+    </script>
+</body>
+</html>

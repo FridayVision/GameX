@@ -219,6 +219,69 @@
             transition: color 0.2s, border-color 0.2s;
         }
         #state-toggle:hover { color: rgba(250,255,254,0.75); border-color: rgba(250,255,254,0.25); }
+
+        /* ── Tied state ─────────────────────────────────────────────── */
+        body.is-tied .movie-card {
+            box-shadow:
+                0 0 0 2px rgba(234,179,8,.55),
+                0 0 32px rgba(234,179,8,.18),
+                0 20px 40px -10px rgba(0,0,0,.75) !important;
+        }
+        body.is-tied .vote-tray { border-color:rgba(234,179,8,.22); opacity:1 !important; }
+        body.is-tied .vote-count { color:#eab308 !important; }
+
+        /* ── Coin flip ──────────────────────────────────────────────── */
+        .coin-scene { width:90px; height:90px; perspective:500px; }
+        .coin-inner {
+            width:100%; height:100%; position:relative;
+            transform-style:preserve-3d;
+            animation:coinSpin .5s linear infinite;
+        }
+        @keyframes coinSpin { to { transform:rotateY(360deg); } }
+        .coin-face {
+            position:absolute; inset:0; border-radius:50%;
+            backface-visibility:hidden; -webkit-backface-visibility:hidden;
+            display:flex; align-items:center; justify-content:center;
+            font-size:1.05rem; font-weight:900; letter-spacing:.06em;
+        }
+        .coin-heads {
+            background:radial-gradient(circle at 38% 38%, rgba(255,255,255,.22), transparent 60%), #ec5838;
+            box-shadow:0 0 24px rgba(236,88,56,.55);
+            color:rgba(255,255,255,.90);
+        }
+        .coin-tails {
+            transform:rotateY(180deg);
+            background:radial-gradient(circle at 38% 38%, rgba(255,255,255,.22), transparent 60%), #15F4C7;
+            box-shadow:0 0 24px rgba(21,244,199,.55);
+            color:rgba(0,0,0,.55);
+        }
+
+        /* ── Coin result — card highlights ──────────────────────────── */
+        /* During spin: neutral (clear the tied amber glow) */
+        body.is-coin .movie-card {
+            box-shadow: 0 20px 40px -10px rgba(0,0,0,0.75) !important;
+            opacity: 1 !important; filter: none !important;
+        }
+        body.is-coin .vote-tray { border-color:rgba(250,255,254,0.09) !important; opacity:1 !important; }
+        body.is-coin .vote-count { color:#fafffe !important; }
+
+        /* Heads → left card (A) wins — orange */
+        body.is-coin-heads #card-a {
+            box-shadow: 0 0 0 2px #ec5838, 0 0 40px rgba(236,88,56,0.45),
+                        0 20px 40px -10px rgba(0,0,0,0.75) !important;
+            opacity:1 !important; filter:none !important;
+        }
+        body.is-coin-heads #card-b { opacity:0.26 !important; filter:grayscale(0.55) !important; }
+        body.is-coin-heads #count-a { color:#ec5838 !important; }
+
+        /* Tails → right card (B) wins — teal */
+        body.is-coin-tails #card-b {
+            box-shadow: 0 0 0 2px #15F4C7, 0 0 40px rgba(21,244,199,0.45),
+                        0 20px 40px -10px rgba(0,0,0,0.75) !important;
+            opacity:1 !important; filter:none !important;
+        }
+        body.is-coin-tails #card-a { opacity:0.26 !important; filter:grayscale(0.55) !important; }
+        body.is-coin-tails #count-b { color:#15F4C7 !important; }
     </style>
 </head>
 
@@ -331,7 +394,7 @@
                  style="flex-shrink:0;width:120px;height:510px;
                         display:flex;align-items:center;justify-content:center;z-index:20">
 
-                <div style="position:relative;width:90px;height:90px;overflow:hidden;border-radius:50%">
+                <div id="vs-badge" style="position:relative;width:90px;height:90px;overflow:hidden;border-radius:50%">
                     <div style="position:absolute;inset:-6px;border-radius:50%;overflow:hidden;
                                 filter:blur(6px) url(#vs-f1);opacity:0.38">
                         <div class="vs-spin" style="position:absolute;inset:-150%;background:linear-gradient(90deg,#ec5838 30%,#0000 50%,#15F4C7 70%)"></div>
@@ -351,6 +414,17 @@
                         </div>
                     </div>
                 </div>
+
+                <!-- Coin (shown in coin-flip state only) -->
+                <div id="coin-container" style="display:none">
+                    <div class="coin-scene">
+                        <div class="coin-inner">
+                            <div class="coin-face coin-heads">H</div>
+                            <div class="coin-face coin-tails">T</div>
+                        </div>
+                    </div>
+                </div>
+
             </div><!-- /VS col -->
 
             <!-- ── Card B column ─────────────────────────────────────── -->
@@ -463,46 +537,118 @@
         requestAnimationFrame(() => setTimeout(() =>
             document.getElementById('app-root').classList.add('is-loaded'), 80));
 
-        // ── Dot / tray data for each state
+        // ── Coin flip timers (module-level so they can be cancelled on state change)
+        let coinTimer = null, coinSlowTimer = null;
+
+        function startCoinFlip() {
+            clearTimeout(coinTimer);
+            clearTimeout(coinSlowTimer);
+
+            const coinInner = document.querySelector('.coin-inner');
+            if (!coinInner) return;
+
+            // Reset to fast spin
+            coinInner.style.animation = 'coinSpin 0.5s linear infinite';
+            coinInner.style.transform = '';
+            document.body.classList.remove('is-coin-heads', 'is-coin-tails');
+
+            // Slow down at 2 s
+            coinSlowTimer = setTimeout(() => {
+                coinInner.style.animationDuration = '1.4s';
+            }, 2000);
+
+            // Stop and reveal result at 3.4 s (random: heads = left card A wins, tails = right card B wins)
+            coinTimer = setTimeout(() => {
+                const isHeads = Math.random() < 0.5;
+                coinInner.style.animation  = 'none';
+                coinInner.style.transform  = isHeads ? 'rotateY(0deg)' : 'rotateY(180deg)';
+                document.body.classList.remove('is-coin');
+                document.body.classList.add(isHeads ? 'is-coin-heads' : 'is-coin-tails');
+            }, 3400);
+        }
+
+        function resetCoin() {
+            clearTimeout(coinTimer);
+            clearTimeout(coinSlowTimer);
+            const coinInner = document.querySelector('.coin-inner');
+            if (coinInner) { coinInner.style.animation = ''; coinInner.style.transform = ''; }
+        }
+
+        // ── State data (4 states cycle: Voting → Result → Tied → Coin Flip)
         const VOTING_STATE = {
+            mode: 'voting',
             phase: 'VOTING',
             phaseBg: '#ec5838',
             phaseGlow: 'rgba(236,88,56,0.30)',
-            countA: '2',
-            countB: '1',
+            countA: '2', countB: '1',
             dotsA: [
                 { name: 'Raahul', color: '#FF6B6B', shadow: 'rgba(255,107,107,0.45)' },
-                { name: 'Padma',  color: '#4ECDC4', shadow: 'rgba(78,205,196,0.45)' },
+                { name: 'Padma',  color: '#4ECDC4', shadow: 'rgba(78,205,196,0.45)'  },
             ],
             dotsB: [
                 { name: 'Sri', color: '#FFE66D', shadow: 'rgba(255,230,109,0.45)' },
             ],
-            derinVoted: false,
-            akshiVoted: false,
+            derinVoted: false, akshiVoted: false, hideAkshi: false,
             toggleLabel: '→ Show Result',
         };
 
         const RESULT_STATE = {
+            mode: 'result',
             phase: 'RESULT',
             phaseBg: '#1a4a1a',
             phaseGlow: 'rgba(21,244,199,0.20)',
-            countA: '3',
-            countB: '2',
+            countA: '3', countB: '2',
             dotsA: [
                 { name: 'Raahul', color: '#FF6B6B', shadow: 'rgba(255,107,107,0.45)' },
-                { name: 'Padma',  color: '#4ECDC4', shadow: 'rgba(78,205,196,0.45)' },
+                { name: 'Padma',  color: '#4ECDC4', shadow: 'rgba(78,205,196,0.45)'  },
                 { name: 'Derin',  color: '#A8E6CF', shadow: 'rgba(168,230,207,0.45)' },
             ],
             dotsB: [
                 { name: 'Sri',   color: '#FFE66D', shadow: 'rgba(255,230,109,0.45)' },
                 { name: 'Akshi', color: '#C3A6FF', shadow: 'rgba(195,166,255,0.45)' },
             ],
-            derinVoted: true,
-            akshiVoted: true,
-            toggleLabel: '← Show Voting',
+            derinVoted: true, akshiVoted: true, hideAkshi: false,
+            toggleLabel: '→ Show Tied',
         };
 
-        let isResult = false;
+        const TIED_STATE = {
+            mode: 'tied',
+            phase: 'TIE',
+            phaseBg: '#78350f',
+            phaseGlow: 'rgba(234,179,8,0.30)',
+            countA: '2', countB: '2',
+            dotsA: [
+                { name: 'Raahul', color: '#FF6B6B', shadow: 'rgba(255,107,107,0.45)' },
+                { name: 'Padma',  color: '#4ECDC4', shadow: 'rgba(78,205,196,0.45)'  },
+            ],
+            dotsB: [
+                { name: 'Sri',   color: '#FFE66D', shadow: 'rgba(255,230,109,0.45)' },
+                { name: 'Derin', color: '#A8E6CF', shadow: 'rgba(168,230,207,0.45)' },
+            ],
+            derinVoted: true, akshiVoted: false, hideAkshi: true,
+            toggleLabel: '→ Coin Flip',
+        };
+
+        const COIN_STATE = {
+            mode: 'coin',
+            phase: 'COIN FLIP',
+            phaseBg: 'rgba(250,255,254,0.10)',
+            phaseGlow: 'rgba(250,255,254,0.08)',
+            countA: '2', countB: '2',
+            dotsA: [
+                { name: 'Raahul', color: '#FF6B6B', shadow: 'rgba(255,107,107,0.45)' },
+                { name: 'Padma',  color: '#4ECDC4', shadow: 'rgba(78,205,196,0.45)'  },
+            ],
+            dotsB: [
+                { name: 'Sri',   color: '#FFE66D', shadow: 'rgba(255,230,109,0.45)' },
+                { name: 'Derin', color: '#A8E6CF', shadow: 'rgba(168,230,207,0.45)' },
+            ],
+            derinVoted: true, akshiVoted: false, hideAkshi: true,
+            toggleLabel: '→ Show Voting',
+        };
+
+        const ALL_STATES = [VOTING_STATE, RESULT_STATE, TIED_STATE, COIN_STATE];
+        let stateIdx = 0;
 
         function renderDots(containerId, dots) {
             const el = document.getElementById(containerId);
@@ -527,21 +673,32 @@
                 dot.className        = 'player-dot waiting';
                 dot.style.background = 'transparent';
                 dot.style.boxShadow  = 'none';
-                dot.style.border     = `2.5px solid ${color}`;  /* must set full border, not just color */
+                dot.style.border     = `2.5px solid ${color}`;
                 dot.style.opacity    = '0.45';
                 name.style.color     = 'rgba(250,255,254,0.40)';
             }
         }
 
         function applyState(s) {
+            // Cancel any pending coin animation and reset coin visual
+            resetCoin();
+
+            // Body state classes
+            document.body.classList.remove('is-result', 'is-tied', 'is-coin', 'is-coin-heads', 'is-coin-tails');
+            if (s.mode !== 'voting') document.body.classList.add(`is-${s.mode}`);
+
             // Phase pill
             const pill = document.getElementById('phase-pill');
-            pill.textContent    = s.phase;
-            pill.style.background  = s.phaseBg;
-            pill.style.boxShadow   = `0 0 22px ${s.phaseGlow}`;
+            pill.textContent      = s.phase;
+            pill.style.background = s.phaseBg;
+            pill.style.boxShadow  = `0 0 22px ${s.phaseGlow}`;
 
-            // Result card classes
-            document.body.classList.toggle('is-result', isResult);
+            // VS badge vs coin spinner
+            document.getElementById('vs-badge').style.display       = s.mode === 'coin' ? 'none' : '';
+            document.getElementById('coin-container').style.display  = s.mode === 'coin' ? '' : 'none';
+
+            // Kick off the coin flip sequence
+            if (s.mode === 'coin') startCoinFlip();
 
             // Counts
             document.getElementById('count-a').textContent = s.countA;
@@ -551,17 +708,18 @@
             renderDots('dots-a', s.dotsA);
             renderDots('dots-b', s.dotsB);
 
-            // Bottom bar Derin + Akshi
+            // Bottom bar
             setPlayerDot('dot-derin', 'name-derin', s.derinVoted, '#A8E6CF', 'rgba(168,230,207,0.40)');
             setPlayerDot('dot-akshi', 'name-akshi', s.akshiVoted, '#C3A6FF', 'rgba(195,166,255,0.40)');
+            document.getElementById('dot-akshi-wrap').style.display = s.hideAkshi ? 'none' : '';
 
-            // Toggle button label
+            // Toggle label
             document.getElementById('state-toggle').textContent = s.toggleLabel;
         }
 
         function toggleState() {
-            isResult = !isResult;
-            applyState(isResult ? RESULT_STATE : VOTING_STATE);
+            stateIdx = (stateIdx + 1) % ALL_STATES.length;
+            applyState(ALL_STATES[stateIdx]);
         }
 
         // Init

@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GameX – Board Lobby</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700;900&display=swap" rel="stylesheet">
+    <script>tailwind.config={theme:{extend:{fontFamily:{sans:['"Space Grotesk"','sans-serif']}}}}</script>
+    <style>
+        body { background:#080808; color:#fafffe; overflow:hidden; -webkit-font-smoothing:antialiased; }
+
+        .led-o { position:absolute;inset:-5%; background-image:radial-gradient(circle,#ec5838 2px,transparent 2.1px); background-size:24px 24px; opacity:.85; -webkit-mask-image:radial-gradient(ellipse 160% 140% at 100% 100%,black 15%,black 40%,transparent 72%); mask-image:radial-gradient(ellipse 160% 140% at 100% 100%,black 15%,black 40%,transparent 72%); }
+        .led-t { position:absolute;inset:-5%; background-image:radial-gradient(circle,#15F4C7 2px,transparent 2.1px); background-size:24px 24px; opacity:.85; -webkit-mask-image:radial-gradient(ellipse 160% 140% at 0% 0%,black 15%,black 40%,transparent 72%); mask-image:radial-gradient(ellipse 160% 140% at 0% 0%,black 15%,black 40%,transparent 72%); }
+
+        /* Room code digit boxes */
+        .dbox {
+            width: clamp(88px, 9.5vw, 128px);
+            height: clamp(108px, 11.5vw, 158px);
+            border: 2px solid rgba(236,88,56,.45);
+            border-radius: 18px;
+            background: rgba(236,88,56,.06);
+            display: flex; align-items: center; justify-content: center;
+            font-size: clamp(3.2rem, 5.8vw, 6rem);
+            font-weight: 900;
+            font-variant-numeric: tabular-nums;
+            color: #ec5838;
+            box-shadow: 0 0 32px rgba(236,88,56,.45), 0 0 10px rgba(236,88,56,.25);
+        }
+
+        /* Player slots */
+        .sc {
+            width: clamp(60px, 6.2vw, 84px);
+            height: clamp(60px, 6.2vw, 84px);
+            border-radius: 50%;
+            border: 2px dashed rgba(250,255,254,.12);
+            background: rgba(250,255,254,.02);
+            display: flex; align-items: center; justify-content: center;
+            font-size: clamp(1.2rem, 1.7vw, 1.9rem);
+            font-weight: 900;
+            transition: all .35s cubic-bezier(.16,1,.3,1);
+            margin: 0 auto;
+        }
+        .sc.filled { border-style: solid; animation: pop .45s cubic-bezier(.16,1,.3,1); }
+        @keyframes pop { 0%{transform:scale(.5);opacity:0} 70%{transform:scale(1.08)} 100%{transform:scale(1);opacity:1} }
+
+        .sn { font-size:clamp(.56rem,.8vw,.76rem); font-weight:600; color:rgba(250,255,254,.32); text-align:center; margin-top:7px; transition:color .35s; max-width:76px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+        .sn.filled { color:rgba(250,255,254,.78); }
+        .hpip { display:block; text-align:center; font-size:.42rem; font-weight:800; letter-spacing:.09em; text-transform:uppercase; padding:2px 5px; border-radius:3px; background:rgba(236,88,56,.14); border:1px solid rgba(236,88,56,.28); color:#ec5838; margin-top:3px; }
+
+        /* Status */
+        .sbadge { display:inline-flex; align-items:center; gap:8px; padding:7px 20px; border-radius:99px; font-weight:700; }
+        .sw { background:rgba(250,255,254,.05); border:1px solid rgba(250,255,254,.12); color:rgba(250,255,254,.48); }
+        .sr { background:rgba(34,197,94,.09); border:1px solid rgba(34,197,94,.28); color:#22c55e; }
+
+        .pdot { width:7px; height:7px; border-radius:50%; background:currentColor; display:inline-block; animation:pd 1.8s ease-in-out infinite; }
+        @keyframes pd { 0%,100%{opacity:.22} 50%{opacity:1} }
+    </style>
+</head>
+
+<body class="h-screen flex flex-col">
+
+    <!-- Background -->
+    <div class="fixed inset-0 z-0 pointer-events-none overflow-hidden">
+        <div class="led-o"></div>
+        <div class="led-t"></div>
+        <div class="absolute inset-0" style="background:radial-gradient(ellipse at center,transparent 25%,#080808 88%)"></div>
+    </div>
+
+    <!-- GameX wordmark -->
+    <div class="absolute top-7 left-8 z-10 text-white/25 text-[.70rem] font-black uppercase tracking-[.26em]">GameX</div>
+
+    <!-- Center content -->
+    <div class="relative z-10 flex-1 flex flex-col items-center justify-center px-6">
+
+        <div class="w-full flex flex-col items-center rounded-[28px] px-10 py-10"
+             style="max-width:min(960px,92vw);
+                    background:#0e0e0e;
+                    border:1px solid rgba(250,255,254,.18);
+                    box-shadow:0 0 0 1px rgba(0,0,0,.9), 0 24px 80px rgba(0,0,0,.75)">
+
+            <!-- Room code -->
+            <div class="text-center mb-8">
+                <p class="text-white/40 text-[.54rem] uppercase tracking-[.40em] font-bold mb-5">
+                    Enter this code on your phone
+                </p>
+                <div class="flex gap-4 justify-center">
+                    <div class="dbox">7</div>
+                    <div class="dbox">3</div>
+                    <div class="dbox">4</div>
+                    <div class="dbox">9</div>
+                </div>
+            </div>
+
+            <!-- Topic -->
+            <div class="text-center mb-9">
+                <p class="text-white/32 text-[.50rem] uppercase tracking-[.32em] font-bold mb-2">Topic</p>
+                <p class="text-white/75 font-bold" style="font-size:clamp(.9rem,1.6vw,1.3rem)">Bollywood Movies</p>
+            </div>
+
+            <div class="w-full h-px mb-9" style="background:rgba(250,255,254,.07)"></div>
+
+            <!-- Player slots row -->
+            <div id="row" class="flex items-start gap-6 justify-center mb-8 w-full flex-wrap"></div>
+
+            <!-- Status badge + message -->
+            <div class="flex items-center gap-4">
+                <span id="badge" class="sbadge sw" style="font-size:clamp(.66rem,.86vw,.80rem)">1 of 8 players</span>
+                <span id="msg" class="text-white/40 flex items-center gap-2" style="font-size:clamp(.63rem,.83vw,.78rem)">
+                    <span class="pdot"></span>Waiting for players to join…
+                </span>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- Bottom instruction -->
+    <div class="relative z-10 text-center pb-7">
+        <p class="text-white/16 text-[.58rem] tracking-wide">
+            Open <span class="text-white/36 font-bold">GameX</span> on your phone
+            &nbsp;·&nbsp; Enter the code above
+            &nbsp;·&nbsp; Pick a colour and join
+        </p>
+    </div>
+
+    <script>
+        const MAX = 8, MIN = 3;
+        const DEMO = [
+            { n:'Raahul', c:'#ec5838', host:true  },
+            { n:'Padma',  c:'#15F4C7', host:false },
+            { n:'Sri',    c:'#9b5de5', host:false },
+            { n:'Derin',  c:'#f15bb5', host:false },
+            { n:'Akshi',  c:'#fee440', host:false },
+        ];
+        let cnt = 0;
+
+        // Build empty slots
+        const row = document.getElementById('row');
+        for (let i = 0; i < MAX; i++) {
+            row.innerHTML += `
+                <div class="text-center">
+                    <div class="sc" id="c${i}"></div>
+                    <div class="sn" id="n${i}">—</div>
+                </div>`;
+        }
+
+        function rgba(hex, a) {
+            const [r,g,b] = [1,3,5].map(i => parseInt(hex.slice(i,i+2),16));
+            return `rgba(${r},${g},${b},${a})`;
+        }
+
+        function addPlayer(p) {
+            const i  = cnt++;
+            const c  = document.getElementById('c'+i);
+            const n  = document.getElementById('n'+i);
+            c.classList.add('filled');
+            Object.assign(c.style, {
+                background:  rgba(p.c,.16),
+                borderColor: p.c,
+                color:       p.c,
+                boxShadow:   `0 0 16px ${rgba(p.c,.55)}, 0 0 36px ${rgba(p.c,.25)}`,
+            });
+            c.textContent = p.n[0];
+            n.textContent = p.n;
+            n.classList.add('filled');
+            if (p.host) n.insertAdjacentHTML('afterend','<div class="hpip">Host</div>');
+            updateStatus();
+        }
+
+        function updateStatus() {
+            const b = document.getElementById('badge');
+            const m = document.getElementById('msg');
+            b.textContent = `${cnt} of ${MAX} players`;
+            if (cnt >= MIN) {
+                b.className = 'sbadge sr';
+                m.innerHTML = `<span style="color:${DEMO[0].c};font-weight:700">${DEMO[0].n}</span>&nbsp;can start the game`;
+            } else {
+                b.className = 'sbadge sw';
+                const nd = MIN - cnt;
+                m.innerHTML = `<span class="pdot"></span>&nbsp;Need ${nd} more player${nd>1?'s':''} to start`;
+            }
+        }
+
+        // Host joins immediately, others stagger in
+        addPlayer(DEMO[0]);
+        DEMO.slice(1).forEach((p, i) => setTimeout(() => addPlayer(p), (i+1) * 2500));
+    </script>
+</body>
+</html>

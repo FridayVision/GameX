@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GameX – Host Lobby</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700;900&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: { extend: {
+                fontFamily: { sans:['"Space Grotesk"','sans-serif'] },
+                colors: { page:'#080808', textMain:'#fafffe', primary:'#ec5838', accent:'#15F4C7' }
+            }}
+        }
+    </script>
+    <style>
+        body { background:#080808; color:#fafffe; overflow:hidden; -webkit-font-smoothing:antialiased; overscroll-behavior:none; }
+
+        .led-orange { position:absolute;inset:-5%; background-image:radial-gradient(circle,#ec5838 2px,transparent 2.1px); background-size:24px 24px; opacity:.85; -webkit-mask-image:radial-gradient(ellipse 160% 140% at 100% 100%,black 15%,black 40%,transparent 72%); mask-image:radial-gradient(ellipse 160% 140% at 100% 100%,black 15%,black 40%,transparent 72%); }
+        .led-teal   { position:absolute;inset:-5%; background-image:radial-gradient(circle,#15F4C7 2px,transparent 2.1px); background-size:24px 24px; opacity:.85; -webkit-mask-image:radial-gradient(ellipse 160% 140% at 0% 0%,black 15%,black 40%,transparent 72%); mask-image:radial-gradient(ellipse 160% 140% at 0% 0%,black 15%,black 40%,transparent 72%); }
+
+        /* Code digits */
+        .digit { width:52px; height:64px; border:1.5px solid rgba(236,88,56,.45); border-radius:11px; background:rgba(236,88,56,.06); display:flex; align-items:center; justify-content:center; font-size:2.4rem; font-weight:900; font-variant-numeric:tabular-nums; color:#ec5838; box-shadow:0 0 18px rgba(236,88,56,.30), 0 0 6px rgba(236,88,56,.18); }
+
+        /* Player rows */
+        .p-row { display:flex; align-items:center; gap:11px; padding:10px 0; border-bottom:1px solid rgba(250,255,254,.05); }
+        .p-row:last-child { border-bottom:none; }
+        .p-dot { width:38px; height:38px; border-radius:50%; border:2px solid; display:flex; align-items:center; justify-content:center; font-size:.95rem; font-weight:900; flex-shrink:0; }
+        .p-name { font-size:.88rem; font-weight:600; color:rgba(250,255,254,.85); }
+        .p-badges { display:flex; gap:4px; margin-top:2px; flex-wrap:wrap; }
+        .b-you  { font-size:.48rem; font-weight:800; letter-spacing:.08em; text-transform:uppercase; padding:2px 5px; border-radius:3px; background:rgba(250,255,254,.08); border:1px solid rgba(250,255,254,.14); color:rgba(250,255,254,.48); }
+        .b-host { font-size:.48rem; font-weight:800; letter-spacing:.08em; text-transform:uppercase; padding:2px 5px; border-radius:3px; background:rgba(236,88,56,.13); border:1px solid rgba(236,88,56,.28); color:#ec5838; }
+
+        /* Scroll */
+        .inner-scroll { overflow-y:auto; -webkit-overflow-scrolling:touch; scrollbar-width:thin; scrollbar-color:rgba(250,255,254,.09) transparent; }
+        .inner-scroll::-webkit-scrollbar { width:3px; }
+        .inner-scroll::-webkit-scrollbar-thumb { background:rgba(250,255,254,.10); border-radius:2px; }
+
+        /* Buttons */
+        .btn-primary { cursor:pointer; transition:all .18s; }
+        .btn-primary:not(:disabled):active { transform:scale(.97); }
+        .btn-primary:disabled { opacity:.26; cursor:not-allowed; }
+        @media(hover:hover){ .btn-primary:not(:disabled):hover { box-shadow:0 0 28px rgba(236,88,56,.40); } }
+
+        .pdot { width:6px; height:6px; border-radius:50%; background:currentColor; display:inline-block; animation:pd 1.8s ease-in-out infinite; }
+        @keyframes pd { 0%,100%{opacity:.22} 50%{opacity:1} }
+
+        /* Player join animation */
+        .p-in { animation:pin .3s cubic-bezier(.16,1,.3,1); }
+        @keyframes pin { from{opacity:0;transform:translateX(-8px)} to{opacity:1;transform:none} }
+
+        .dev-toggle { position:fixed; bottom:16px; right:16px; z-index:999; background:rgba(21,244,199,.12); border:1px solid rgba(21,244,199,.38); color:#15F4C7; font-family:'Space Grotesk',sans-serif; font-size:.65rem; font-weight:700; letter-spacing:.1em; padding:6px 13px; border-radius:20px; cursor:pointer; }
+    </style>
+</head>
+
+<body class="h-[100dvh]">
+
+    <!-- Background -->
+    <div class="fixed inset-0 z-0 pointer-events-none overflow-hidden">
+        <div class="led-orange"></div>
+        <div class="led-teal"></div>
+        <div class="absolute inset-0" style="background:radial-gradient(ellipse at center,transparent 30%,#080808 95%)"></div>
+    </div>
+
+    <div class="relative z-10 h-[100dvh] flex flex-col px-4 pt-6 pb-4 overflow-hidden">
+
+        <!-- Header card -->
+        <div class="w-full max-w-[390px] mx-auto shrink-0 mb-3">
+            <div class="rounded-[16px] px-5 py-4"
+                 style="background:#0e0e0e; border:1px solid rgba(250,255,254,.18);
+                        box-shadow:0 0 0 1px rgba(0,0,0,.8),0 8px 32px rgba(0,0,0,.60)">
+                <h1 class="text-textMain text-[1.85rem] font-black leading-none tracking-[-0.03em] uppercase mb-1.5">
+                    Host Lobby
+                </h1>
+                <p class="text-textMain/40 text-[0.72rem] font-medium">Room is live · Share the code with your players</p>
+            </div>
+        </div>
+
+        <!-- Main card -->
+        <div class="w-full max-w-[390px] mx-auto flex-1 flex flex-col rounded-[20px] overflow-hidden min-h-0"
+             style="background:#0e0e0e; border:1px solid rgba(250,255,254,.18);
+                    box-shadow:0 0 0 1px rgba(0,0,0,.8),0 16px 56px rgba(0,0,0,.70)">
+
+            <!-- Room code + topic -->
+            <div class="shrink-0 px-6 pt-6 pb-5 border-b border-textMain/[.07]">
+                <p class="text-textMain/45 text-[.56rem] uppercase tracking-[.26em] font-bold mb-3">Room Code</p>
+                <div class="flex gap-2.5 justify-center mb-4">
+                    <div class="digit">7</div>
+                    <div class="digit">3</div>
+                    <div class="digit">4</div>
+                    <div class="digit">9</div>
+                </div>
+                <div class="flex items-center gap-1.5 justify-center flex-wrap">
+                    <span class="text-textMain/55 text-[.74rem] font-semibold">Bollywood Movies</span>
+                    <span class="text-textMain/22 text-[.65rem]">·</span>
+                    <span class="text-textMain/32 text-[.68rem]">16 items</span>
+                    <span class="text-textMain/22 text-[.65rem]">·</span>
+                    <span class="text-textMain/32 text-[.68rem]">4 rounds</span>
+                </div>
+            </div>
+
+            <!-- Player list -->
+            <div class="flex-1 inner-scroll px-6 py-4 min-h-0">
+                <div class="flex items-center justify-between mb-3">
+                    <span class="text-textMain/45 text-[.56rem] uppercase tracking-[.26em] font-bold">Players</span>
+                    <span id="count-label" class="text-[.78rem] font-bold text-primary">2 / 8</span>
+                </div>
+                <div id="player-list"></div>
+                <p id="slots-note" class="text-textMain/22 text-[.63rem] mt-4 text-center">6 more players can join</p>
+            </div>
+
+            <!-- Start button -->
+            <div class="shrink-0 border-t border-textMain/[.07] px-6 pt-4 pb-5">
+                <p id="start-hint" class="text-textMain/35 text-[.63rem] text-center mb-2.5 flex items-center justify-center gap-1.5">
+                    <span class="pdot"></span>Need 1 more player to start
+                </p>
+                <button id="start-btn" disabled
+                        class="btn-primary w-full h-[50px] bg-primary text-white font-bold text-[.97rem]
+                               rounded-[12px] shadow-[0_0_20px_rgba(236,88,56,.24)]
+                               flex items-center justify-center gap-2">
+                    Start Game
+                    <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                        <path d="M5 12h14M12 5l7 7-7 7"/>
+                    </svg>
+                </button>
+            </div>
+
+        </div>
+    </div>
+
+    <button class="dev-toggle" onclick="toggleState()">TOGGLE STATE</button>
+
+    <script>
+        const ALL_PLAYERS = [
+            { n:'Raahul', c:'#ec5838', you:true,  host:true  },
+            { n:'Padma',  c:'#15F4C7', you:false, host:false },
+            { n:'Sri',    c:'#9b5de5', you:false, host:false },
+            { n:'Derin',  c:'#f15bb5', you:false, host:false },
+            { n:'Akshi',  c:'#fee440', you:false, host:false },
+        ];
+
+        // State 0 = 2 players (need 1 more), State 1 = 3 players (can start)
+        const STATES = [2, 3];
+        let si = 0;
+
+        function rgba(hex, a) {
+            const [r,g,b] = [1,3,5].map(i => parseInt(hex.slice(i,i+2),16));
+            return `rgba(${r},${g},${b},${a})`;
+        }
+
+        function render(count) {
+            const players = ALL_PLAYERS.slice(0, count);
+            const list = document.getElementById('player-list');
+            list.innerHTML = '';
+            players.forEach((p, i) => {
+                const row = document.createElement('div');
+                row.className = 'p-row p-in';
+                row.style.animationDelay = `${i * 40}ms`;
+                row.innerHTML = `
+                    <div class="p-dot" style="border-color:${p.c};background:${rgba(p.c,.13)};color:${p.c}">${p.n[0]}</div>
+                    <div>
+                        <div class="p-name">${p.n}</div>
+                        <div class="p-badges">
+                            ${p.you  ? '<span class="b-you">You</span>'   : ''}
+                            ${p.host ? '<span class="b-host">Host</span>' : ''}
+                        </div>
+                    </div>`;
+                list.appendChild(row);
+            });
+
+            const left = 8 - count;
+            document.getElementById('count-label').textContent = `${count} / 8`;
+            document.getElementById('slots-note').textContent  = `${left} more player${left !== 1 ? 's' : ''} can join`;
+
+            const canStart = count >= 3;
+            const hint = document.getElementById('start-hint');
+            const btn  = document.getElementById('start-btn');
+            btn.disabled = !canStart;
+            if (canStart) {
+                hint.innerHTML = '';
+            } else {
+                const nd = 3 - count;
+                hint.innerHTML = `<span class="pdot"></span>Need ${nd} more player${nd > 1 ? 's' : ''} to start`;
+            }
+        }
+
+        function toggleState() {
+            si = (si + 1) % STATES.length;
+            render(STATES[si]);
+        }
+
+        render(STATES[0]);
+    </script>
+</body>
+</html>

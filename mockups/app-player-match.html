@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>GameX – Match</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700;900&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: { extend: {
+                fontFamily: { sans:['"Space Grotesk"','sans-serif'] },
+                colors: { page:'#080808', textMain:'#fafffe', primary:'#ec5838', accent:'#15F4C7' }
+            }}
+        }
+    </script>
+    <style>
+        body { background:#080808; color:#fafffe; overflow:hidden; -webkit-font-smoothing:antialiased; overscroll-behavior:none; }
+
+        .led-orange { position:absolute;inset:-5%; background-image:radial-gradient(circle,#ec5838 2px,transparent 2.1px); background-size:24px 24px; opacity:.85; -webkit-mask-image:radial-gradient(ellipse 160% 140% at 100% 100%,black 15%,black 40%,transparent 72%); mask-image:radial-gradient(ellipse 160% 140% at 100% 100%,black 15%,black 40%,transparent 72%); }
+        .led-teal   { position:absolute;inset:-5%; background-image:radial-gradient(circle,#15F4C7 2px,transparent 2.1px); background-size:24px 24px; opacity:.85; -webkit-mask-image:radial-gradient(ellipse 160% 140% at 0% 0%,black 15%,black 40%,transparent 72%); mask-image:radial-gradient(ellipse 160% 140% at 0% 0%,black 15%,black 40%,transparent 72%); }
+
+        /* ── Movie cards ─────────────────────────────────────────────── */
+        .movie-card {
+            position:relative; border-radius:10px; overflow:hidden;
+            box-shadow:0 8px 24px -6px rgba(0,0,0,0.72);
+            transition:box-shadow 0.5s ease, opacity 0.5s ease, filter 0.5s ease;
+        }
+
+        /* Result: A wins */
+        body.is-result .card-winner {
+            box-shadow:0 0 0 2px #ec5838, 0 0 22px rgba(236,88,56,.50), 0 8px 24px -6px rgba(0,0,0,.72) !important;
+        }
+        body.is-result .card-loser { opacity:.24; filter:grayscale(.55); }
+
+        /* Tied */
+        body.is-tied .movie-card {
+            box-shadow:0 0 0 2px rgba(234,179,8,.60), 0 0 18px rgba(234,179,8,.22), 0 8px 24px -6px rgba(0,0,0,.72) !important;
+        }
+
+        /* Coin: A wins */
+        body.is-coin-a .card-a {
+            box-shadow:0 0 0 2px #ec5838, 0 0 22px rgba(236,88,56,.50), 0 8px 24px -6px rgba(0,0,0,.72) !important;
+        }
+        body.is-coin-a .card-b { opacity:.24; filter:grayscale(.55); }
+
+        /* Coin: B wins */
+        body.is-coin-b .card-b {
+            box-shadow:0 0 0 2px #15F4C7, 0 0 22px rgba(21,244,199,.50), 0 8px 24px -6px rgba(0,0,0,.72) !important;
+        }
+        body.is-coin-b .card-a { opacity:.24; filter:grayscale(.55); }
+
+        /* ── Vote buttons ────────────────────────────────────────────── */
+        .vote-btn {
+            height:52px; border-radius:10px; flex:1;
+            font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:0.80rem;
+            cursor:pointer; transition:all .15s;
+            display:flex; align-items:center; justify-content:center; gap:5px;
+            padding:0 10px; overflow:hidden; white-space:nowrap; text-overflow:ellipsis;
+        }
+        .vote-btn.neutral {
+            background:rgba(250,255,254,.05); border:1.5px solid rgba(250,255,254,.15);
+            color:rgba(250,255,254,.78);
+        }
+        .vote-btn.neutral:active { transform:scale(.97); }
+        @media(hover:hover){ .vote-btn.neutral:hover {
+            background:rgba(250,255,254,.09); border-color:rgba(250,255,254,.28);
+        }}
+        .vote-btn.other-opt {
+            background:rgba(250,255,254,.02); border:1.5px solid rgba(250,255,254,.06);
+            color:rgba(250,255,254,.20); cursor:default;
+        }
+
+        /* ── Vote dots under cards ───────────────────────────────────── */
+        #dots-row { display:none; }
+        #dots-row.visible { display:flex; }
+
+        .pdot-item { display:flex; flex-direction:column; align-items:center; gap:3px; }
+        .pdot-circle { width:22px; height:22px; border-radius:50%; }
+        .pdot-name { font-size:9px; font-weight:500; color:rgba(250,255,254,.50); white-space:nowrap; }
+        .you-tag {
+            font-size:7px; font-weight:800; text-transform:uppercase; letter-spacing:.06em;
+            padding:1px 4px; border-radius:2px;
+            background:rgba(250,255,254,.08); border:1px solid rgba(250,255,254,.14);
+            color:rgba(250,255,254,.42);
+        }
+
+        /* ── Pulsing blink dot ──────────────────────────────────────── */
+        .blink { display:inline-block; width:6px; height:6px; border-radius:50%; background:currentColor; animation:bl 1.8s ease-in-out infinite; flex-shrink:0; }
+        @keyframes bl { 0%,100%{opacity:.20} 50%{opacity:1} }
+
+        /* ── Scroll ─────────────────────────────────────────────────── */
+        .inner-scroll { overflow-y:auto; -webkit-overflow-scrolling:touch; scrollbar-width:none; }
+        .inner-scroll::-webkit-scrollbar { display:none; }
+
+        /* ── Dev toggle ─────────────────────────────────────────────── */
+        #dev-toggle {
+            position:fixed; bottom:16px; right:16px; z-index:999;
+            background:rgba(21,244,199,.11); border:1px solid rgba(21,244,199,.36); color:#15F4C7;
+            font-family:'Space Grotesk',sans-serif; font-size:0.64rem; font-weight:700; letter-spacing:.10em;
+            padding:6px 14px; border-radius:20px; cursor:pointer;
+        }
+    </style>
+</head>
+
+<body class="h-[100dvh]">
+
+    <!-- Background -->
+    <div class="fixed inset-0 z-0 pointer-events-none overflow-hidden">
+        <div class="led-orange"></div>
+        <div class="led-teal"></div>
+        <div class="absolute inset-0" style="background:radial-gradient(ellipse at center,transparent 30%,#080808 95%)"></div>
+    </div>
+
+    <div class="relative z-10 h-[100dvh] flex flex-col px-4 pt-5 pb-4 overflow-hidden">
+
+        <!-- Top bar -->
+        <div class="w-full max-w-[390px] mx-auto shrink-0 mb-3">
+            <div class="rounded-[16px] px-5 py-3.5"
+                 style="background:#0e0e0e; border:1px solid rgba(250,255,254,.18);
+                        box-shadow:0 0 0 1px rgba(0,0,0,.8),0 8px 32px rgba(0,0,0,.60)">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <span class="text-textMain/40 text-[0.60rem] font-bold uppercase tracking-[.18em]">Round 2 of 3</span>
+                        <span class="text-textMain/20 mx-1.5">·</span>
+                        <span class="text-textMain/28 text-[0.60rem] font-medium">Match 1 of 2</span>
+                    </div>
+                    <span id="phase-pill"
+                          style="background:#ec5838;color:#fafffe;padding:4px 14px;border-radius:5px;
+                                 font-weight:700;letter-spacing:0.12em;text-transform:uppercase;font-size:0.70rem;
+                                 box-shadow:0 0 18px rgba(236,88,56,0.28);
+                                 transition:background 0.4s, box-shadow 0.4s">
+                        DEBATE
+                    </span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main card -->
+        <div class="w-full max-w-[390px] mx-auto flex-1 flex flex-col rounded-[20px] overflow-hidden min-h-0"
+             style="background:#0e0e0e; border:1px solid rgba(250,255,254,.18);
+                    box-shadow:0 0 0 1px rgba(0,0,0,.8),0 16px 56px rgba(0,0,0,.70)">
+
+            <!-- Centered body -->
+            <div class="flex-1 flex flex-col justify-center px-4 py-5 gap-3 min-h-0">
+
+                <!-- A vs B -->
+                <div class="flex items-stretch">
+
+                    <!-- Card A -->
+                    <div class="flex-1">
+                        <div id="card-a" class="movie-card card-a card-winner" style="height:210px">
+                            <div style="position:absolute;inset:0;transform:scale(1.04);
+                                        background:url('https://images.unsplash.com/photo-1533167649158-6d508895b680?q=80&w=600&auto=format&fit=crop') center/cover no-repeat"></div>
+                            <div style="position:absolute;inset:0;background:rgba(236,88,56,0.10);mix-blend-mode:color;pointer-events:none"></div>
+                            <div style="position:absolute;inset:0;background:linear-gradient(to top,rgba(0,0,0,0.94) 0%,rgba(0,0,0,0.52) 42%,transparent 100%)"></div>
+                            <div style="position:absolute;inset-inline:0;bottom:0;padding:9px 10px 12px">
+                                <p style="font-size:0.52rem;font-weight:700;color:rgba(250,255,254,0.38);letter-spacing:.16em;text-transform:uppercase;margin:0 0 3px">Side A</p>
+                                <h3 style="font-size:0.78rem;font-weight:700;color:#fafffe;line-height:1.2;margin:0 0 2px;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical">Thiruda Thiruda</h3>
+                                <p style="font-size:0.60rem;color:rgba(255,255,255,0.40);font-style:italic;margin:0">Tamil · 1993</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- VS -->
+                    <div style="width:32px;flex-shrink:0;display:flex;align-items:center;justify-content:center">
+                        <span style="font-size:0.76rem;font-weight:900;font-style:italic;color:rgba(250,255,254,0.22);letter-spacing:-0.5px">VS</span>
+                    </div>
+
+                    <!-- Card B -->
+                    <div class="flex-1">
+                        <div id="card-b" class="movie-card card-b card-loser" style="height:210px">
+                            <div style="position:absolute;inset:0;transform:scale(1.04);
+                                        background:url('https://images.unsplash.com/photo-1478147427282-58a87a120781?q=80&w=600&auto=format&fit=crop') center/cover no-repeat"></div>
+                            <div style="position:absolute;inset:0;background:rgba(21,244,199,0.10);mix-blend-mode:color;pointer-events:none"></div>
+                            <div style="position:absolute;inset:0;background:linear-gradient(to top,rgba(0,0,0,0.94) 0%,rgba(0,0,0,0.52) 42%,transparent 100%)"></div>
+                            <div style="position:absolute;inset-inline:0;bottom:0;padding:9px 10px 12px">
+                                <p style="font-size:0.52rem;font-weight:700;color:rgba(250,255,254,0.38);letter-spacing:.16em;text-transform:uppercase;margin:0 0 3px">Side B</p>
+                                <h3 style="font-size:0.78rem;font-weight:700;color:#fafffe;line-height:1.2;margin:0 0 2px;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical">Minsara Kanavu</h3>
+                                <p style="font-size:0.60rem;color:rgba(255,255,255,0.40);font-style:italic;margin:0">Tamil · 1997</p>
+                            </div>
+                        </div>
+                    </div>
+
+                </div><!-- /vs row -->
+
+                <!-- Vote dots (hidden during debate) -->
+                <div id="dots-row" style="gap:0">
+                    <div class="flex-1">
+                        <div class="flex items-start gap-2.5 flex-wrap" id="dots-a"></div>
+                    </div>
+                    <div style="width:32px;flex-shrink:0"></div>
+                    <div class="flex-1">
+                        <div class="flex items-start gap-2.5 flex-wrap" id="dots-b"></div>
+                    </div>
+                </div>
+
+                <!-- State message (vote count, waiting text, etc) -->
+                <div id="state-msg" class="flex items-center justify-center"></div>
+
+            </div><!-- /scroll -->
+
+            <!-- Bottom action bar -->
+            <div class="shrink-0 border-t border-textMain/[.07] px-4 pt-3.5 pb-4">
+
+                <!-- DEBATE: locked, waiting -->
+                <div id="action-debate">
+                    <div class="flex items-center justify-center gap-2 h-[52px]">
+                        <span class="blink" style="color:rgba(250,255,254,0.28)"></span>
+                        <span style="color:rgba(250,255,254,0.35);font-size:0.82rem;font-weight:500">Voting hasn't opened yet</span>
+                    </div>
+                </div>
+
+                <!-- VOTING: two big buttons -->
+                <div id="action-voting" class="hidden">
+                    <div class="flex gap-2">
+                        <button class="vote-btn neutral" onclick="castVote('a')">Thiruda Thiruda</button>
+                        <button class="vote-btn neutral" onclick="castVote('b')">Minsara Kanavu</button>
+                    </div>
+                    <p style="color:rgba(250,255,254,0.22);font-size:0.62rem;text-align:center;margin-top:8px">Tap to cast your vote</p>
+                </div>
+
+                <!-- VOTED: locked, my choice highlighted -->
+                <div id="action-voted" class="hidden">
+                    <div class="flex gap-2 mb-2" id="voted-btns"></div>
+                    <p class="flex items-center justify-center gap-1.5"
+                       style="color:rgba(250,255,254,0.28);font-size:0.62rem">
+                        <span class="blink" style="color:rgba(250,255,254,0.28)"></span>
+                        Waiting for Derin…
+                    </p>
+                </div>
+
+                <!-- RESULT: winner banner -->
+                <div id="action-result" class="hidden">
+                    <div class="flex items-center justify-center gap-2 h-[52px] rounded-[10px]"
+                         style="background:rgba(236,88,56,0.09);border:1px solid rgba(236,88,56,0.24)">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#ec5838" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                        <span style="color:#ec5838;font-weight:700;font-size:0.85rem">Thiruda Thiruda advances!</span>
+                    </div>
+                </div>
+
+                <!-- TIED: amber banner + coin flip pending -->
+                <div id="action-tied" class="hidden">
+                    <div class="rounded-[10px] px-4 py-3 text-center"
+                         style="background:rgba(234,179,8,0.07);border:1px solid rgba(234,179,8,0.22)">
+                        <p style="color:#eab308;font-weight:800;font-size:0.90rem;margin:0 0 4px">It's a Tie</p>
+                        <p class="flex items-center justify-center gap-1.5"
+                           style="color:rgba(234,179,8,0.55);font-size:0.68rem;margin:0">
+                            <span class="blink" style="color:#eab308"></span>
+                            Host is calling a coin flip…
+                        </p>
+                    </div>
+                </div>
+
+                <!-- COIN RESULT: winner via coin flip -->
+                <div id="action-coin" class="hidden">
+                    <div id="coin-banner" class="flex items-center justify-center gap-2 h-[52px] rounded-[10px]"
+                         style="background:rgba(21,244,199,0.09);border:1px solid rgba(21,244,199,0.24)">
+                        <svg id="coin-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#15F4C7" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                        <span id="coin-text" style="color:#15F4C7;font-weight:700;font-size:0.85rem">Minsara Kanavu wins the coin flip!</span>
+                    </div>
+                </div>
+
+            </div><!-- /bottom action -->
+        </div><!-- /main card -->
+    </div>
+
+    <button id="dev-toggle" onclick="nextState()">→ Voting Opens</button>
+
+    <script>
+        // ── You (Padma, teal) ──────────────────────────────────────────
+        const ME = { name:'Padma', color:'#15F4C7', isMe:true };
+
+        // ── Players in this match ──────────────────────────────────────
+        const P = {
+            raahul: { name:'Raahul', color:'#ec5838' },
+            padma:  { name:'Padma',  color:'#15F4C7', isMe:true },
+            sri:    { name:'Sri',    color:'#FFE66D' },
+            derin:  { name:'Derin',  color:'#A8E6CF' },
+        };
+
+        // ── 6 states ───────────────────────────────────────────────────
+        const STATES = [
+            {
+                id:'debate',
+                phase:'DEBATE', phaseBg:'#ec5838', phaseGlow:'rgba(236,88,56,0.28)',
+                bodyClass:'', showDots:false, dotsA:[], dotsB:[],
+                action:'debate',
+                stateMsg:`<span class="blink" style="color:rgba(250,255,254,.16)"></span>
+                          <span style="color:rgba(250,255,254,.22);font-size:0.74rem;font-weight:500;margin-left:6px">Debate in progress</span>`,
+                nextLabel:'→ Voting Opens',
+            },
+            {
+                id:'voting',
+                phase:'VOTING', phaseBg:'#ec5838', phaseGlow:'rgba(236,88,56,0.28)',
+                bodyClass:'', showDots:true,
+                dotsA:[P.raahul],
+                dotsB:[P.sri],
+                action:'voting',
+                stateMsg:`<span style="color:rgba(250,255,254,.32);font-size:0.74rem;font-weight:600">2 of 4 voted</span>`,
+                nextLabel:'→ Vote for A',
+            },
+            {
+                id:'voted',
+                phase:'VOTED', phaseBg:'#0c2e2e', phaseGlow:'rgba(21,244,199,0.18)',
+                bodyClass:'', showDots:true,
+                dotsA:[P.raahul, P.padma],
+                dotsB:[P.sri],
+                myVote:'a',
+                action:'voted',
+                stateMsg:`<span class="blink" style="color:rgba(250,255,254,.20)"></span>
+                          <span style="color:rgba(250,255,254,.26);font-size:0.74rem;font-weight:500;margin-left:6px">3 of 4 voted</span>`,
+                nextLabel:'→ Show Result',
+            },
+            {
+                id:'result',
+                phase:'RESULT', phaseBg:'#1a4a1a', phaseGlow:'rgba(21,244,199,0.18)',
+                bodyClass:'is-result', showDots:true,
+                dotsA:[P.raahul, P.padma, P.derin],
+                dotsB:[P.sri],
+                action:'result',
+                stateMsg:'',
+                nextLabel:'→ Show Tied',
+            },
+            {
+                id:'tied',
+                phase:'TIE', phaseBg:'#78350f', phaseGlow:'rgba(234,179,8,0.28)',
+                bodyClass:'is-tied', showDots:true,
+                dotsA:[P.raahul, P.padma],
+                dotsB:[P.sri, P.derin],
+                action:'tied',
+                stateMsg:'',
+                nextLabel:'→ Coin Result (B wins)',
+            },
+            {
+                id:'coin',
+                phase:'COIN FLIP', phaseBg:'rgba(250,255,254,0.08)', phaseGlow:'rgba(250,255,254,0.05)',
+                bodyClass:'is-coin-b', showDots:true,
+                dotsA:[P.raahul, P.padma],
+                dotsB:[P.sri, P.derin],
+                action:'coin',
+                stateMsg:'',
+                nextLabel:'→ Back to Debate',
+            },
+        ];
+        let idx = 0;
+
+        // ── Helpers ────────────────────────────────────────────────────
+        function hexRgb(h) { return [1,3,5].map(i => parseInt(h.slice(i,i+2),16)); }
+        function rgba(hex, a) { const [r,g,b]=hexRgb(hex); return `rgba(${r},${g},${b},${a})`; }
+
+        function renderDots(containerId, players) {
+            document.getElementById(containerId).innerHTML = players.map(p => `
+                <div class="pdot-item">
+                    <div class="pdot-circle" style="background:${p.color};box-shadow:0 0 7px ${rgba(p.color,.42)}"></div>
+                    ${p.isMe
+                        ? '<span class="you-tag">You</span>'
+                        : `<span class="pdot-name">${p.name}</span>`}
+                </div>`).join('');
+        }
+
+        // ── Apply state ────────────────────────────────────────────────
+        function applyState(s) {
+            // Body class
+            document.body.classList.remove('is-result','is-tied','is-coin-a','is-coin-b');
+            if (s.bodyClass) document.body.classList.add(s.bodyClass);
+
+            // Phase pill
+            const pill = document.getElementById('phase-pill');
+            pill.textContent      = s.phase;
+            pill.style.background = s.phaseBg;
+            pill.style.boxShadow  = `0 0 18px ${s.phaseGlow}`;
+
+            // Dots row
+            document.getElementById('dots-row').classList.toggle('visible', s.showDots);
+            renderDots('dots-a', s.dotsA);
+            renderDots('dots-b', s.dotsB);
+
+            // State message
+            document.getElementById('state-msg').innerHTML = s.stateMsg;
+
+            // Hide all actions, show current
+            ['debate','voting','voted','result','tied','coin'].forEach(id =>
+                document.getElementById(`action-${id}`).classList.add('hidden'));
+            document.getElementById(`action-${s.action}`).classList.remove('hidden');
+
+            // Voted state: render locked buttons
+            if (s.id === 'voted') {
+                const isA       = s.myVote === 'a';
+                const myLabel   = isA ? 'Thiruda Thiruda' : 'Minsara Kanavu';
+                const othLabel  = isA ? 'Minsara Kanavu' : 'Thiruda Thiruda';
+                document.getElementById('voted-btns').innerHTML = `
+                    <button class="vote-btn" disabled
+                            style="background:${rgba(ME.color,.12)};
+                                   border:1.5px solid ${rgba(ME.color,.55)};
+                                   color:${ME.color};cursor:default;font-weight:800">
+                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                             stroke-width="3" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>
+                        ${myLabel}
+                    </button>
+                    <button class="vote-btn other-opt" disabled>${othLabel}</button>`;
+            }
+
+            // Dev toggle label
+            document.getElementById('dev-toggle').textContent = s.nextLabel;
+        }
+
+        // ── Vote action (demo: always goes to voted state) ─────────────
+        function castVote(choice) {
+            idx = 2; // jump to voted state
+            applyState(STATES[idx]);
+        }
+
+        function nextState() {
+            idx = (idx + 1) % STATES.length;
+            applyState(STATES[idx]);
+        }
+
+        // Init
+        applyState(STATES[0]);
+    </script>
+</body>
+</html>

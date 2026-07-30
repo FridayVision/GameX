@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>GameX – Your Assignment</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700;900&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: { extend: {
+                fontFamily: { sans:['"Space Grotesk"','sans-serif'] },
+                colors: { page:'#080808', textMain:'#fafffe', primary:'#ec5838', accent:'#15F4C7' }
+            }}
+        }
+    </script>
+    <style>
+        body { background:#080808; color:#fafffe; -webkit-font-smoothing:antialiased; overscroll-behavior:none; }
+
+        .led-orange { position:absolute;inset:-5%; background-image:radial-gradient(circle,#ec5838 2px,transparent 2.1px); background-size:24px 24px; opacity:.85; -webkit-mask-image:radial-gradient(ellipse 160% 140% at 100% 100%,black 15%,black 40%,transparent 72%); mask-image:radial-gradient(ellipse 160% 140% at 100% 100%,black 15%,black 40%,transparent 72%); }
+        .led-teal   { position:absolute;inset:-5%; background-image:radial-gradient(circle,#15F4C7 2px,transparent 2.1px); background-size:24px 24px; opacity:.85; -webkit-mask-image:radial-gradient(ellipse 160% 140% at 0% 0%,black 15%,black 40%,transparent 72%); mask-image:radial-gradient(ellipse 160% 140% at 0% 0%,black 15%,black 40%,transparent 72%); }
+
+        /* ── Card flip ── */
+        .card-scene {
+            width: 240px;
+            height: 360px;
+            perspective: 900px;
+            animation: cardIn 0.65s cubic-bezier(0.16,1,0.3,1) 0.2s both;
+            cursor: pointer;
+            -webkit-tap-highlight-color: transparent;
+            user-select: none;
+        }
+        @keyframes cardIn {
+            from { opacity:0; transform:translateY(28px) scale(0.90); }
+            to   { opacity:1; transform:none; }
+        }
+
+        .card-inner {
+            width: 100%;
+            height: 100%;
+            position: relative;
+            transform-style: preserve-3d;
+            transition: transform 0.60s cubic-bezier(0.16,1,0.3,1);
+        }
+        .card-inner.flipped { transform: rotateY(180deg); }
+
+        .card-face {
+            position: absolute;
+            inset: 0;
+            border-radius: 16px;
+            backface-visibility: hidden;
+            -webkit-backface-visibility: hidden;
+            overflow: hidden;
+        }
+
+        /* ── Card back (face-down) ── */
+        .card-back {
+            background: #111111;
+            border: 1.5px solid rgba(250,255,254,.10);
+            box-shadow: 0 0 0 1px rgba(0,0,0,.90), 0 28px 64px rgba(0,0,0,.85);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 0;
+        }
+        /* Subtle noise on back */
+        .card-back::before {
+            content: '';
+            position: absolute; inset: 0;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+            opacity: 0.35;
+            pointer-events: none;
+        }
+        /* Subtle GAMEX watermark on back */
+        .card-back::after {
+            content: 'GAMEX';
+            position: absolute;
+            font-size: 5.5rem;
+            font-weight: 900;
+            letter-spacing: -.04em;
+            color: rgba(250,255,254,.04);
+            pointer-events: none;
+            user-select: none;
+        }
+
+        /* Hold progress ring */
+        .hold-ring-wrap {
+            position: relative;
+            width: 80px;
+            height: 80px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .hold-ring-wrap svg {
+            position: absolute;
+            inset: 0;
+            transform: rotate(-90deg);
+        }
+        .ring-track { fill:none; stroke:rgba(250,255,254,.08); stroke-width:3; }
+        .ring-progress {
+            fill: none;
+            stroke-width: 3;
+            stroke-linecap: round;
+            /* r=36 → C = 2π×36 ≈ 226.2 */
+            stroke-dasharray: 226.2;
+            stroke-dashoffset: 226.2;
+            transition: stroke-dashoffset 0.04s linear;
+        }
+
+        /* Hold hint pulse */
+        @keyframes hint-pulse { 0%,100%{opacity:.32} 50%{opacity:.70} }
+        .hint-pulse { animation: hint-pulse 2s ease-in-out infinite; }
+
+        /* ── Card front (assignment) ── */
+        .card-front {
+            transform: rotateY(180deg);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: space-between;
+            padding: 22px 20px 20px;
+            /* Styled by JS with player color */
+        }
+        .card-front::before {
+            content: '';
+            position: absolute; inset: 0;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+            opacity: 0.35;
+            pointer-events: none;
+        }
+
+        /* ── Buttons ── */
+        .btn-ready { cursor:pointer; transition:all .18s; }
+        .btn-ready:active { transform:scale(.97); }
+        @media(hover:hover){ .btn-ready:hover { box-shadow:0 0 22px rgba(21,244,199,.30); } }
+
+        /* Ready waiting dots */
+        .wdot { width:5px;height:5px;border-radius:50%;display:inline-block;animation:wd 1.6s ease-in-out infinite; }
+        .wdot:nth-child(2){animation-delay:.28s} .wdot:nth-child(3){animation-delay:.56s}
+        @keyframes wd{0%,100%{opacity:.18}50%{opacity:.90}}
+
+        .fade-up { animation: fadeUp 0.5s cubic-bezier(0.16,1,0.3,1) both; }
+        @keyframes fadeUp { from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:none} }
+
+        .dev-toggle { background:rgba(21,244,199,.12);border:1px solid rgba(21,244,199,.38);color:#15F4C7;font-family:'Space Grotesk',sans-serif;font-size:.65rem;font-weight:700;letter-spacing:.1em;padding:6px 13px;border-radius:20px;cursor:pointer; }
+    </style>
+</head>
+
+<body class="h-[100dvh] overflow-hidden">
+
+    <!-- Background -->
+    <div class="fixed inset-0 z-0 pointer-events-none overflow-hidden">
+        <div class="led-orange"></div>
+        <div class="led-teal"></div>
+        <div class="absolute inset-0" style="background:radial-gradient(ellipse at center,transparent 30%,#080808 95%)"></div>
+    </div>
+
+    <div class="relative z-10 h-[100dvh] flex flex-col items-center px-5 pt-7 pb-4 gap-4 overflow-y-auto" style="-webkit-overflow-scrolling:touch;scrollbar-width:none">
+
+        <!-- Top: player identity + round info -->
+        <div class="fade-up w-full flex items-center justify-between" style="animation-delay:.05s">
+
+            <!-- Player chip -->
+            <div class="flex items-center gap-2.5 px-3.5 py-2 rounded-full"
+                 style="background:#0e0e0e; border:1px solid rgba(250,255,254,.16)">
+                <div id="player-chip-dot"
+                     class="w-7 h-7 rounded-full border-2 flex items-center justify-center text-[.78rem] font-black flex-shrink-0">P</div>
+                <span id="player-name" class="font-bold text-[.85rem] text-textMain/85">Padma</span>
+            </div>
+
+            <!-- Round badge -->
+            <div class="px-3.5 py-2 rounded-full"
+                 style="background:#0e0e0e; border:1px solid rgba(250,255,254,.16)">
+                <span class="text-textMain/50 text-[.62rem] uppercase tracking-[.22em] font-bold">
+                    Round <span class="text-textMain/75">1</span> of 4
+                </span>
+            </div>
+        </div>
+
+        <!-- Center: hero label + card -->
+        <div class="flex flex-col items-center gap-3 w-full">
+
+            <!-- Hero label -->
+            <div class="fade-up px-5 py-3 rounded-[14px] w-[240px]"
+                 style="animation-delay:.10s; background:#0e0e0e; border:1px solid rgba(250,255,254,.14); box-shadow:0 0 0 1px rgba(0,0,0,.8)">
+                <h2 class="font-black text-[1.55rem] tracking-[-0.03em] uppercase leading-none text-center"
+                    style="color:#ec5838">
+                    Your Secret<br>Assignment
+                </h2>
+            </div>
+
+            <!-- Card with flip mechanic -->
+            <div class="card-scene" id="card-scene"
+                 onpointerdown="startHold(event)"
+                 onpointerup="endHold()"
+                 onpointerleave="endHold()"
+                 oncontextmenu="return false">
+                <div class="card-inner" id="card-inner">
+
+                    <!-- Back face -->
+                    <div class="card-face card-back">
+                        <div class="relative z-10 flex flex-col items-center gap-5">
+                            <!-- Ring + icon -->
+                            <div class="hold-ring-wrap" id="hold-ring-wrap">
+                                <svg width="80" height="80" viewBox="0 0 80 80">
+                                    <circle class="ring-track" cx="40" cy="40" r="36"/>
+                                    <circle class="ring-progress" id="ring-progress" cx="40" cy="40" r="36"/>
+                                </svg>
+                                <!-- Hand icon -->
+                                <svg width="30" height="30" viewBox="0 0 24 24" fill="none"
+                                     stroke="rgba(250,255,254,0.36)" stroke-width="1.6"
+                                     stroke-linecap="round" stroke-linejoin="round"
+                                     class="hint-pulse">
+                                    <path d="M18 11V6a2 2 0 0 0-4 0v5"/>
+                                    <path d="M14 10V4a2 2 0 0 0-4 0v6"/>
+                                    <path d="M10 10.5V6a2 2 0 0 0-4 0v8l-1.5-1.5a1.5 1.5 0 0 0-2.1 2.1l3.6 3.6A5 5 0 0 0 10 21h4a4 4 0 0 0 4-4v-5.5a1.5 1.5 0 0 0-3 0"/>
+                                </svg>
+                            </div>
+                            <!-- Hold label -->
+                            <p class="hint-pulse text-[.58rem] font-bold uppercase tracking-[.18em]"
+                               style="color:rgba(250,255,254,.32)">Hold to reveal</p>
+                        </div>
+                    </div>
+
+                    <!-- Front face (player-color styled by JS) -->
+                    <div class="card-face card-front" id="card-front">
+
+                        <!-- Top: "Assigned" label -->
+                        <div class="w-full flex items-start relative z-10">
+                            <span id="assigned-label"
+                                  class="text-[.52rem] font-bold uppercase tracking-[.18em]">Assigned</span>
+                        </div>
+
+                        <!-- Middle: item name -->
+                        <div class="text-center px-2 relative z-10">
+                            <p id="item-name"
+                               class="text-textMain font-black leading-tight"
+                               style="font-size:1.75rem; text-shadow:0 2px 20px rgba(0,0,0,.60)">
+                                Sholay
+                            </p>
+                        </div>
+
+                        <!-- Bottom: empty spacer -->
+                        <div class="w-full relative z-10"></div>
+
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- Keep secret pill -->
+            <div class="fade-up flex items-center gap-2 px-4 py-2 rounded-full"
+                 style="animation-delay:.35s; background:#0e0e0e; border:1px solid rgba(250,255,254,.12)">
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="rgba(250,255,254,0.38)" stroke-width="2.2">
+                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+                    <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+                </svg>
+                <span class="text-textMain/38 text-[.60rem] font-medium">Keep this secret from others</span>
+            </div>
+
+            <!-- I'm Ready / Waiting — swaps inside the same card, card never moves -->
+            <div class="w-[240px] rounded-[16px] px-5 pt-4 pb-3"
+                 style="background:#0e0e0e; border:1px solid rgba(250,255,254,.12); box-shadow:0 0 0 1px rgba(0,0,0,.8)">
+
+                <!-- Ready state -->
+                <div id="ready-state">
+                    <button id="ready-btn" onclick="goReady()" disabled
+                            class="btn-ready w-full h-[52px] font-black text-[1.1rem] rounded-[12px]
+                                   flex items-center justify-center gap-2 border-2"
+                            style="background:rgba(21,244,199,.10); border-color:rgba(21,244,199,.40); color:#15F4C7;
+                                   opacity:.30; pointer-events:none">
+                        I'm Ready
+                        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                            <path d="M20 6L9 17l-5-5"/>
+                        </svg>
+                    </button>
+                    <p id="ready-hint" class="text-textMain/28 text-[.60rem] text-center mt-2">
+                        Hold the card above to reveal your assignment
+                    </p>
+                </div>
+
+                <!-- Waiting state (swaps in after I'm Ready) -->
+                <div id="state-waiting" class="hidden py-2 text-center">
+                    <div class="flex items-center justify-center gap-2 mb-2">
+                        <span class="wdot player-wdot"></span>
+                        <span class="wdot player-wdot"></span>
+                        <span class="wdot player-wdot"></span>
+                    </div>
+                    <p class="text-textMain/70 text-[.72rem] font-medium">Waiting for others to confirm…</p>
+                    <p class="text-textMain/38 text-[.60rem] mt-1">3 of 5 confirmed</p>
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+    <!-- Dev controls -->
+    <div style="position:fixed;bottom:16px;right:16px;z-index:999;display:flex;flex-direction:column;gap:7px;align-items:flex-end">
+        <button class="dev-toggle" onclick="cyclePlayer()">NEXT PLAYER</button>
+        <button class="dev-toggle" onclick="devReset()">RESET CARD</button>
+    </div>
+
+    <script>
+        // ── All 7 player colours (orange reserved for host) ───────────
+        // Keeping this array here is useful for implementation reference:
+        // the server picks a colour per player and sends it with the payload.
+        const ALL_PLAYERS = [
+            { name:'Padma',  color:'#15F4C7', initial:'P' }, // teal
+            { name:'Sri',    color:'#a855f7', initial:'S' }, // purple
+            { name:'Derin',  color:'#f472b6', initial:'D' }, // pink
+            { name:'Akshi',  color:'#fee440', initial:'A' }, // yellow
+            { name:'Rohan',  color:'#38bdf8', initial:'R' }, // blue
+            { name:'Priya',  color:'#a3e635', initial:'P' }, // lime
+            { name:'Kiran',  color:'#ff2d55', initial:'K' }, // red
+        ];
+        let playerIdx = 0;
+        const ITEM = 'Sholay';
+
+        // ── Apply player color to all themed elements ─────────────────
+        function hexToRgb(hex) {
+            return [1,3,5].map(i => parseInt(hex.slice(i,i+2),16));
+        }
+
+        function applyPlayerColor(color) {
+            const [r,g,b] = hexToRgb(color);
+            // Player chip
+            const chip = document.getElementById('player-chip-dot');
+            chip.style.borderColor = color;
+            chip.style.background  = `rgba(${r},${g},${b},.13)`;
+            chip.style.color       = color;
+            // Card front
+            const front = document.getElementById('card-front');
+            front.style.background = `linear-gradient(160deg, rgba(${r},${g},${b},.08) 0%, #111111 38%)`;
+            front.style.border     = `1.5px solid rgba(${r},${g},${b},.38)`;
+            front.style.boxShadow  = `0 0 0 1px rgba(0,0,0,.90), 0 0 28px rgba(${r},${g},${b},.20), 0 0 64px rgba(${r},${g},${b},.08), 0 28px 64px rgba(0,0,0,.85)`;
+            // Assigned label
+            document.getElementById('assigned-label').style.color = `rgba(${r},${g},${b},.50)`;
+            // Hold ring
+            document.getElementById('ring-progress').style.stroke = color;
+            // Ready button
+            const btn = document.getElementById('ready-btn');
+            btn.style.borderColor  = `rgba(${r},${g},${b},.40)`;
+            btn.style.background   = `rgba(${r},${g},${b},.10)`;
+            btn.style.color        = color;
+            // Waiting dots
+            document.querySelectorAll('.player-wdot').forEach(d => d.style.background = color);
+        }
+
+        // ── Dev: cycle through all player colours ─────────────────────
+        function cyclePlayer() {
+            playerIdx = (playerIdx + 1) % ALL_PLAYERS.length;
+            const p = ALL_PLAYERS[playerIdx];
+            document.getElementById('player-chip-dot').textContent = p.initial;
+            document.getElementById('player-name').textContent     = p.name;
+            applyPlayerColor(p.color);
+        }
+
+        // Init with first player
+        applyPlayerColor(ALL_PLAYERS[0].color);
+        document.getElementById('item-name').textContent = ITEM;
+
+        // ── Hold-to-reveal ────────────────────────────────────────────
+        const HOLD_MS     = 650;
+        const CIRCUMF     = 2 * Math.PI * 36; // ≈ 226.2
+        let holdStart     = null;
+        let holdTimer     = null;
+        let rafId         = null;
+        let isFlipped     = false;
+        let isReady       = false;
+
+        function startHold(e) {
+            if (isFlipped || isReady) return;
+            e.preventDefault();
+            holdStart = Date.now();
+            holdTimer = setTimeout(revealCard, HOLD_MS);
+            rafId = requestAnimationFrame(tickRing);
+        }
+
+        function endHold() {
+            if (isFlipped) return;
+            clearTimeout(holdTimer);
+            cancelAnimationFrame(rafId);
+            holdStart = null;
+            // Reset ring
+            document.getElementById('ring-progress').style.strokeDashoffset = CIRCUMF;
+        }
+
+        function tickRing() {
+            if (!holdStart) return;
+            const pct    = Math.min((Date.now() - holdStart) / HOLD_MS, 1);
+            const offset = CIRCUMF * (1 - pct);
+            document.getElementById('ring-progress').style.strokeDashoffset = offset;
+            if (pct < 1) rafId = requestAnimationFrame(tickRing);
+        }
+
+        function revealCard() {
+            isFlipped = true;
+            cancelAnimationFrame(rafId);
+            document.getElementById('ring-progress').style.strokeDashoffset = 0;
+            document.getElementById('card-inner').classList.add('flipped');
+            // Unlock Ready button
+            const btn  = document.getElementById('ready-btn');
+            const hint = document.getElementById('ready-hint');
+            btn.disabled = false;
+            btn.style.opacity       = '1';
+            btn.style.pointerEvents = 'auto';
+            hint.textContent = "Tap when you've memorised your card";
+        }
+
+        function goReady() {
+            if (!isFlipped) return;
+            isReady = true;
+            document.getElementById('ready-state').classList.add('hidden');
+            document.getElementById('state-waiting').classList.remove('hidden');
+        }
+
+        // ── Dev reset — card back to face-down, player back to #0 ──────
+        function devReset() {
+            isFlipped = false;
+            isReady   = false;
+            playerIdx = 0;
+            endHold();
+            document.getElementById('card-inner').classList.remove('flipped');
+            document.getElementById('ready-state').classList.remove('hidden');
+            document.getElementById('state-waiting').classList.add('hidden');
+            const p    = ALL_PLAYERS[0];
+            const btn  = document.getElementById('ready-btn');
+            const hint = document.getElementById('ready-hint');
+            btn.disabled = true;
+            btn.style.opacity       = '.30';
+            btn.style.pointerEvents = 'none';
+            hint.textContent = 'Hold the card above to reveal your assignment';
+            document.getElementById('player-chip-dot').textContent = p.initial;
+            document.getElementById('player-name').textContent     = p.name;
+            applyPlayerColor(p.color);
+        }
+    </script>
+</body>
+</html>
