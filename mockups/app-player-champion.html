@@ -20,41 +20,29 @@
 
         body {
             font-family: 'Space Grotesk', sans-serif;
-            background-color: #060d05;
+            background-color: #080808;
             color: #fafffe;
             overflow: hidden;
             -webkit-font-smoothing: antialiased;
             overscroll-behavior: none;
         }
 
-        /* ── LED background (ported from board) ─────────────────── */
-        .led-dots {
-            position: absolute; inset: 0; z-index: 0;
-            background-image: radial-gradient(circle, rgba(250,255,254,0.26) 1.5px, transparent 1.5px);
-            background-size: 24px 24px;
-            animation: dots-breathe 6s ease-in-out infinite;
-        }
-        @keyframes dots-breathe {
-            0%, 100% { opacity: 0.50; }
-            50%       { opacity: 1; }
-        }
-
+        /* ── LED background (phone-style, matches join screen) ───── */
         .led-orange {
-            position: absolute; inset: 0; z-index: 0;
-            background:
-                radial-gradient(ellipse 95% 78% at 8%  92%, rgba(236,88,56,0.36) 0%, rgba(190,48,10,0.15) 38%, transparent 62%),
-                radial-gradient(ellipse 70% 55% at 50%  0%, rgba(220,72,30,0.22) 0%, transparent 55%),
-                radial-gradient(ellipse 60% 50% at 92% 10%, rgba(200,60,18,0.14) 0%, transparent 50%);
+            position: absolute; inset: -5%;
+            background-image: radial-gradient(circle, #ec5838 2px, transparent 2.1px);
+            background-size: 24px 24px;
+            opacity: .85;
+            -webkit-mask-image: radial-gradient(ellipse 160% 140% at 100% 100%, black 15%, black 40%, transparent 72%);
+            mask-image: radial-gradient(ellipse 160% 140% at 100% 100%, black 15%, black 40%, transparent 72%);
         }
         .led-teal {
-            position: absolute; inset: 0; z-index: 0;
-            background:
-                radial-gradient(ellipse 55% 45% at 96%  8%, rgba(21,244,199,0.12) 0%, transparent 58%),
-                radial-gradient(ellipse 35% 28% at 90% 75%, rgba(21,244,199,0.04) 0%, transparent 50%);
-        }
-        .led-void {
-            position: absolute; inset: 0; z-index: 0;
-            background: radial-gradient(ellipse 60% 62% at 50% 50%, rgba(4,9,3,0.92) 0%, rgba(6,12,5,0.58) 44%, transparent 72%);
+            position: absolute; inset: -5%;
+            background-image: radial-gradient(circle, #15F4C7 2px, transparent 2.1px);
+            background-size: 24px 24px;
+            opacity: .85;
+            -webkit-mask-image: radial-gradient(ellipse 160% 140% at 0% 0%, black 15%, black 40%, transparent 72%);
+            mask-image: radial-gradient(ellipse 160% 140% at 0% 0%, black 15%, black 40%, transparent 72%);
         }
 
         /* ── Spotlight behind champion card ─────────────────────── */
@@ -68,7 +56,7 @@
                 rgba(200,55,20,0.08) 40%,
                 transparent 70%);
             filter: blur(28px);
-            z-index: 1; pointer-events: none;
+            z-index: 2; pointer-events: none;
             animation: spotlight-breathe 3s ease-in-out infinite;
         }
         @keyframes spotlight-breathe {
@@ -164,11 +152,12 @@
 
 <body class="h-[100dvh]" id="app-root">
 
-    <!-- Background (board-style) -->
-    <div class="led-dots"           aria-hidden="true"></div>
-    <div class="led-orange"         aria-hidden="true"></div>
-    <div class="led-teal"           aria-hidden="true"></div>
-    <div class="led-void"           aria-hidden="true"></div>
+    <!-- Background (phone-style, matches join screen) -->
+    <div class="fixed inset-0 z-0 pointer-events-none overflow-hidden" aria-hidden="true">
+        <div class="led-orange"></div>
+        <div class="led-teal"></div>
+        <div class="absolute inset-0" style="background:radial-gradient(ellipse at center,transparent 30%,#080808 95%)"></div>
+    </div>
     <div class="champion-spotlight" aria-hidden="true"></div>
 
     <!-- Content -->
@@ -187,7 +176,12 @@
         </div>
 
         <!-- THE CHAMPION heading -->
-        <div class="reveal-fade-up d-200" style="text-align:center;line-height:1;margin-bottom:16px">
+        <div class="reveal-fade-up d-200"
+             style="text-align:center;line-height:1;margin-bottom:16px;
+                    background:rgba(8,8,8,0.72);backdrop-filter:blur(12px);
+                    border:1px solid rgba(250,255,254,0.10);border-radius:14px;
+                    padding:14px 28px;
+                    box-shadow:0 0 0 1px rgba(0,0,0,.80),0 8px 28px rgba(0,0,0,.55)">
             <p style="font-size:0.68rem;font-weight:700;letter-spacing:0.38em;text-transform:uppercase;
                       color:rgba(250,255,254,0.35);margin:0 0 2px">THE</p>
             <h1 style="font-size:2.90rem;font-weight:900;letter-spacing:0.02em;text-transform:uppercase;
