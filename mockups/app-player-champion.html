@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>GameX – Champion</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700;900&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: { extend: {
+                fontFamily: { sans:['Space Grotesk','sans-serif'] }
+            }}
+        }
+    </script>
+    <style>
+        *, *::before, *::after { box-sizing: border-box; }
+
+        body {
+            font-family: 'Space Grotesk', sans-serif;
+            background-color: #060d05;
+            color: #fafffe;
+            overflow: hidden;
+            -webkit-font-smoothing: antialiased;
+            overscroll-behavior: none;
+        }
+
+        /* ── LED background (ported from board) ─────────────────── */
+        .led-dots {
+            position: absolute; inset: 0; z-index: 0;
+            background-image: radial-gradient(circle, rgba(250,255,254,0.26) 1.5px, transparent 1.5px);
+            background-size: 24px 24px;
+            animation: dots-breathe 6s ease-in-out infinite;
+        }
+        @keyframes dots-breathe {
+            0%, 100% { opacity: 0.50; }
+            50%       { opacity: 1; }
+        }
+
+        .led-orange {
+            position: absolute; inset: 0; z-index: 0;
+            background:
+                radial-gradient(ellipse 95% 78% at 8%  92%, rgba(236,88,56,0.36) 0%, rgba(190,48,10,0.15) 38%, transparent 62%),
+                radial-gradient(ellipse 70% 55% at 50%  0%, rgba(220,72,30,0.22) 0%, transparent 55%),
+                radial-gradient(ellipse 60% 50% at 92% 10%, rgba(200,60,18,0.14) 0%, transparent 50%);
+        }
+        .led-teal {
+            position: absolute; inset: 0; z-index: 0;
+            background:
+                radial-gradient(ellipse 55% 45% at 96%  8%, rgba(21,244,199,0.12) 0%, transparent 58%),
+                radial-gradient(ellipse 35% 28% at 90% 75%, rgba(21,244,199,0.04) 0%, transparent 50%);
+        }
+        .led-void {
+            position: absolute; inset: 0; z-index: 0;
+            background: radial-gradient(ellipse 60% 62% at 50% 50%, rgba(4,9,3,0.92) 0%, rgba(6,12,5,0.58) 44%, transparent 72%);
+        }
+
+        /* ── Spotlight behind champion card ─────────────────────── */
+        .champion-spotlight {
+            position: absolute;
+            top: 4%; left: 50%; transform: translateX(-50%);
+            width: 380px; height: 380px;
+            border-radius: 50%;
+            background: radial-gradient(ellipse at center,
+                rgba(236,88,56,0.20) 0%,
+                rgba(200,55,20,0.08) 40%,
+                transparent 70%);
+            filter: blur(28px);
+            z-index: 1; pointer-events: none;
+            animation: spotlight-breathe 3s ease-in-out infinite;
+        }
+        @keyframes spotlight-breathe {
+            0%, 100% { opacity: 0.70; transform: translateX(-50%) scale(1); }
+            50%       { opacity: 1;    transform: translateX(-50%) scale(1.10); }
+        }
+
+        /* ── Champion card glow ──────────────────────────────────── */
+        @keyframes champ-pulse {
+            0%, 100% {
+                box-shadow:
+                    0 0 0 2px #ec5838,
+                    0 0 32px  rgba(236,88,56,0.50),
+                    0 0 80px  rgba(236,88,56,0.22),
+                    0 20px 45px -8px rgba(0,0,0,0.85);
+            }
+            50% {
+                box-shadow:
+                    0 0 0 2px #ec5838,
+                    0 0 60px  rgba(236,88,56,0.80),
+                    0 0 130px rgba(236,88,56,0.38),
+                    0 20px 45px -8px rgba(0,0,0,0.85);
+            }
+        }
+        .champion-card { animation: champ-pulse 2.6s ease-in-out infinite; }
+
+        /* ── Card image warm tint ────────────────────────────────── */
+        .layer-warm::after {
+            content: ''; position: absolute; inset: 0;
+            background: rgba(236,88,56,0.14); mix-blend-mode: color; pointer-events: none;
+        }
+
+        /* ── Path to the top ─────────────────────────────────────── */
+        .path-track { display: flex; align-items: center; }
+
+        .path-item  { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+
+        .path-card-wrap {
+            width: 70px; height: 105px;
+            border-radius: 7px; overflow: hidden;
+            position: relative;
+            outline: 1px solid rgba(255,255,255,0.06);
+            flex-shrink: 0;
+        }
+        .path-card-img {
+            position: absolute; inset: 0;
+            background-size: cover; background-position: center;
+            filter: grayscale(0.75) brightness(0.45);
+        }
+        .path-card-overlay {
+            position: absolute; inset: 0;
+            background: linear-gradient(to top, rgba(0,0,0,0.92) 0%, rgba(0,0,0,0.55) 45%, transparent 100%);
+        }
+        .path-card-title {
+            position: absolute; bottom: 0; left: 0; right: 0;
+            padding: 6px 7px 8px;
+            font-size: 0.58rem; font-weight: 700;
+            color: rgba(250,255,254,0.55); line-height: 1.2;
+        }
+        .path-round-label {
+            font-size: 0.55rem; font-weight: 700; letter-spacing: 0.14em;
+            text-transform: uppercase; color: rgba(250,255,254,0.28);
+        }
+        .path-arrow {
+            width: 22px; flex-shrink: 0;
+            display: flex; align-items: center; justify-content: center;
+            padding-bottom: 22px; /* rough mid-card alignment */
+            color: rgba(250,255,254,0.18);
+            font-size: 0.80rem;
+        }
+
+        /* ── Entrance animations (from board) ────────────────────── */
+        .reveal-fade-up {
+            opacity: 0; transform: translateY(20px);
+            transition: opacity 0.75s cubic-bezier(0.16,1,0.3,1),
+                        transform  0.75s cubic-bezier(0.16,1,0.3,1);
+        }
+        .reveal-scale-in {
+            opacity: 0; transform: scale(0.88);
+            transition: opacity 0.80s cubic-bezier(0.16,1,0.3,1),
+                        transform  0.80s cubic-bezier(0.16,1,0.3,1);
+        }
+        .is-loaded .reveal-fade-up  { opacity: 1; transform: translateY(0); }
+        .is-loaded .reveal-scale-in { opacity: 1; transform: scale(1); }
+
+        .d-100 { transition-delay: 100ms; }
+        .d-200 { transition-delay: 200ms; }
+        .d-300 { transition-delay: 300ms; }
+        .d-500 { transition-delay: 500ms; }
+
+    </style>
+</head>
+
+<body class="h-[100dvh]" id="app-root">
+
+    <!-- Background (board-style) -->
+    <div class="led-dots"           aria-hidden="true"></div>
+    <div class="led-orange"         aria-hidden="true"></div>
+    <div class="led-teal"           aria-hidden="true"></div>
+    <div class="led-void"           aria-hidden="true"></div>
+    <div class="champion-spotlight" aria-hidden="true"></div>
+
+    <!-- Content -->
+    <div class="relative z-10 h-[100dvh] flex flex-col items-center justify-center px-4 py-6 overflow-hidden"
+         style="gap:0">
+
+        <!-- Round context pill -->
+        <div class="reveal-fade-up d-100" style="margin-bottom:14px">
+            <div style="background:rgba(4,8,3,0.60);backdrop-filter:blur(8px);
+                        border:1px solid rgba(250,255,254,0.08);border-radius:8px;
+                        padding:5px 14px;text-align:center;
+                        color:rgba(250,255,254,0.45);letter-spacing:0.14em;
+                        text-transform:uppercase;font-size:0.62rem;font-weight:600">
+                Round 4 of 4 &nbsp;·&nbsp; Final
+            </div>
+        </div>
+
+        <!-- THE CHAMPION heading -->
+        <div class="reveal-fade-up d-200" style="text-align:center;line-height:1;margin-bottom:16px">
+            <p style="font-size:0.68rem;font-weight:700;letter-spacing:0.38em;text-transform:uppercase;
+                      color:rgba(250,255,254,0.35);margin:0 0 2px">THE</p>
+            <h1 style="font-size:2.90rem;font-weight:900;letter-spacing:0.02em;text-transform:uppercase;
+                       color:#ec5838;margin:0;line-height:0.92;
+                       text-shadow:
+                           0 0 28px rgba(236,88,56,0.72),
+                           0 0 65px rgba(236,88,56,0.36)">CHAMPION</h1>
+        </div>
+
+        <!-- Champion card -->
+        <div class="reveal-scale-in d-300" style="position:relative;margin-bottom:8px">
+
+            <div class="champion-card" id="champion-card"
+                 style="width:200px;height:285px;border-radius:14px;overflow:hidden;
+                        position:relative;outline:1px solid rgba(255,255,255,0.12)">
+
+                <!-- Poster -->
+                <div class="layer-warm"
+                     style="position:absolute;inset:0;transform:scale(1.03);
+                            background:url('https://images.unsplash.com/photo-1533167649158-6d508895b680?q=80&w=600&auto=format&fit=crop') center/cover no-repeat"></div>
+
+                <!-- Gradient -->
+                <div style="position:absolute;inset:0;
+                            background:linear-gradient(to top,rgba(0,0,0,0.95) 0%,rgba(0,0,0,0.55) 42%,transparent 100%)"></div>
+
+                <!-- Title pill -->
+                <div style="position:absolute;inset-inline:0;bottom:0;padding:14px 14px 18px">
+                    <div style="background:rgba(4,8,3,0.72);backdrop-filter:blur(10px);
+                                border:1px solid rgba(250,255,254,0.09);border-radius:8px;padding:10px 12px">
+                        <h2 style="font-size:1.25rem;font-weight:700;letter-spacing:-0.02em;
+                                   margin:0 0 2px;color:#fafffe;line-height:1.1">Thiruda Thiruda</h2>
+                        <p style="color:rgba(255,255,255,0.55);font-style:italic;font-size:0.70rem;margin:0">Tamil · 1993</p>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Path to the top -->
+        <div class="reveal-fade-up d-500" style="margin-top:6px">
+            <p style="font-size:0.58rem;font-weight:700;letter-spacing:0.20em;text-transform:uppercase;
+                      color:rgba(250,255,254,0.25);text-align:center;margin:0 0 10px">PATH TO THE TOP</p>
+
+            <div class="path-track">
+
+                <!-- R1 beaten -->
+                <div class="path-item">
+                    <div class="path-card-wrap">
+                        <div class="path-card-img"
+                             style="background-image:url('https://images.unsplash.com/photo-1478147427282-58a87a120781?q=80&w=300&auto=format&fit=crop')"></div>
+                        <div class="path-card-overlay"></div>
+                        <div class="path-card-title">Minsara Kanavu</div>
+                    </div>
+                    <span class="path-round-label">R1</span>
+                </div>
+
+                <div class="path-arrow">→</div>
+
+                <!-- R2 beaten -->
+                <div class="path-item">
+                    <div class="path-card-wrap">
+                        <div class="path-card-img"
+                             style="background-image:url('https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?q=80&w=300&auto=format&fit=crop')"></div>
+                        <div class="path-card-overlay"></div>
+                        <div class="path-card-title">Kadhalan</div>
+                    </div>
+                    <span class="path-round-label">R2</span>
+                </div>
+
+                <div class="path-arrow">→</div>
+
+                <!-- Semi beaten -->
+                <div class="path-item">
+                    <div class="path-card-wrap">
+                        <div class="path-card-img"
+                             style="background-image:url('https://images.unsplash.com/photo-1536440136628-849c177e76a1?q=80&w=300&auto=format&fit=crop')"></div>
+                        <div class="path-card-overlay"></div>
+                        <div class="path-card-title">Mudhalvan</div>
+                    </div>
+                    <span class="path-round-label">Semi</span>
+                </div>
+
+                <div class="path-arrow">→</div>
+
+                <!-- Final beaten -->
+                <div class="path-item">
+                    <div class="path-card-wrap">
+                        <div class="path-card-img"
+                             style="background-image:url('https://images.unsplash.com/photo-1440404653325-ab127d49abc1?q=80&w=300&auto=format&fit=crop')"></div>
+                        <div class="path-card-overlay"></div>
+                        <div class="path-card-title">Gentleman</div>
+                    </div>
+                    <span class="path-round-label">Final</span>
+                </div>
+
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        requestAnimationFrame(() => setTimeout(() =>
+            document.getElementById('app-root').classList.add('is-loaded'), 80));
+    </script>
+</body>
+</html>

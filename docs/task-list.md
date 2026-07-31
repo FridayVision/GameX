@@ -2,7 +2,7 @@
 
 Generated from brainstorming session: 2026-07-27
 Tech stack: Next.js + Socket.IO
-Default config: 4 players, 16 movies, host-configurable owned vs wild ratio
+Default config: 4 players, 16 movies
 
 ---
 
@@ -14,7 +14,7 @@ _Foundation for everything. All later layers depend on this being stable._
 - [ ] Implement room creation API route — `POST /api/room/create`; generates unique roomId, stores room in server memory or session store; returns roomId to host
 - [ ] Implement room join flow — `POST /api/room/join`; accepts roomId + player name; adds player to room state; emits `player-joined` Socket.IO event to all clients in room
 - [ ] Set up Socket.IO server — initialise Socket.IO on the Next.js custom server; define room namespacing by roomId so events are scoped per game session
-- [ ] Build lobby screen (host view) — shows joined players, bracket size selector (8/16/32), owned vs wild ratio slider; host sees a "Start Game" button; dependency: room join flow must be complete
+- [ ] Build lobby screen (host view) — shows joined players, bracket size selector (8/16/32); host sees a "Start Game" button; dependency: room join flow must be complete
 - [ ] Build lobby screen (player view) — shows room code, waiting state, player list as others join; receives `player-joined` Socket.IO event to update live
 - [ ] Build TV board client — separate browser client (e.g. `/tv/[roomId]`) that connects to Socket.IO and receives only public state; no secret data ever sent to this client
 - [ ] Implement bracket generation — on host "Start Game", take the approved movie pool and seed a single-elimination bracket; store full bracket structure server-side; emit `bracket-ready` event with public bracket data (movie titles, match pairings, round index) — _dependency for Layer 2 content reveal and Layer 3 assignment_
@@ -38,7 +38,7 @@ _Depends on Layer 1 room and socket infrastructure._
 
 _Depends on Layer 1 bracket and Layer 2 pool approval. Server-side secrecy is critical throughout._
 
-- [ ] Design assignment algorithm — server-side function: at the start of each round, assign each player one movie from that round's active matches; respect owned vs wild ratio set by host; if a player's previously assigned movie was eliminated, assign a new live movie; multiple players may be assigned the same movie in later rounds (semis/finals) without knowing — server-side only
+- [ ] Design assignment algorithm — server-side function: at the start of each round, assign each player one movie from that round's active matches; if a player's previously assigned movie was eliminated, assign a new live movie at random; multiple players may be assigned the same movie in later rounds (semis/finals) without knowing — server-side only
 - [ ] Implement assignment store — server-side data structure that records, per player per round: playerId, roundIndex, assignedMovie; never exposed to clients during the game; persisted in room state for post-game reveal — _dependency for Layer 5 ending_
 - [ ] Implement QR generation API route — `GET /api/qr/[roomId]/[playerId]/[roundIndex]`; server validates the request is for the current round; generates QR code image encoding the player's secret assignment text (movie name + round context e.g. "Defending: Interstellar — Round 1 of 4"); returns image; server-side only, never cached on client
 - [ ] Build sequential QR display on TV board — host triggers "Show QR" for the current round; TV board displays one QR code at a time per player in sequence (Player 1 → Player 2 → ...); host advances manually; QR disappears after player scans or host moves on — trust-based, MVP; emit `qr-next-player` Socket.IO event to advance
@@ -78,4 +78,4 @@ _Depends on all prior layers. Assignment store from Layer 3 must be complete and
 
 - [ ] Define shared Socket.IO event schema — document all event names and payloads in a single constants file (e.g. `lib/socket-events.ts`); both server and client import from this file to avoid string drift — _dependency for all socket tasks across all layers_
 - [ ] Enforce TV board receives public state only — middleware or server-side filter on all Socket.IO emissions; any payload containing assignment data must be scoped to individual player socket connections, never broadcast to the room — _security-critical, review at each layer_
-- [ ] Bracket size configuration — host settings UI exposes bracket size (8/16/32) and owned vs wild ratio before game start; values stored in room state and used by assignment algorithm and LLM generation route
+- [ ] Bracket size configuration — host settings UI exposes bracket size (8/16/32) before game start; value stored in room state and used by assignment algorithm and LLM generation route

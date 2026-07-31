@@ -84,11 +84,10 @@ Votes accumulate under Items as Players cast; shown by Player colour, not name.
 │                                            │
 │           R1        R2     Semi   Final    │
 │  Raahul   Vikram    Anbe   Anbe   Anbe    │
-│  Divya    Anbe      Vikram Vikram  —      │
+│  Divya    Anbe      Vikram Vikram Vikram  │
 │  Karthik  Mersal    Anbe   Anbe   Anbe   │
 │  Priya    Anbe      Anbe   Anbe   Anbe   │
 │                                            │
-│  Anbe Sivam — WILD (no owner)             │
 └────────────────────────────────────────────┘
 ```
 

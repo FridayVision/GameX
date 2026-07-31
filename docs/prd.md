@@ -37,7 +37,7 @@ The app runs in any browser, supports groups on a shared TV and fully remote pla
 **UJ-1. Raahul hosts a Tamil movie bracket with four friends — three in the room, one remote.**
 - **Entry state:** Raahul opens the app on his laptop, creates a Room, shares the code. Three friends join on phones. One joins remotely on their phone. Raahul opens the Board URL on his laptop and connects it to the TV via HDMI.
 - **Path:** Raahul types "Vadivelu comedy movies" → app generates a Pool of 25 movies via multi-tool search → Raahul selects 16, adds one manual entry, locks the list → Round 1 begins → each player's phone shows a face-down Assignment card; they long-press to reveal their pick privately → all four debate match one → Raahul calls Vote on his phone → votes appear live on TV → winner advances → repeat.
-- **Climax:** A Wild movie no one owned wins the final. The post-game reveal shows Raahul defended it in the semis and final after his original pick was eliminated in Round 2.
+- **Climax:** Thiruda Thiruda wins the final. The post-game reveal shows Padma ended up defending it in the semi and final after her own pick was eliminated in Round 2 — Raahul had been quietly arguing against it the whole time.
 - **Resolution:** The assignment history table appears on TV and all phones. Everyone argues about whether Raahul threw Round 1.
 
 **UJ-2. A remote player uses reverse psychology to protect their pick.**
@@ -60,13 +60,12 @@ The app runs in any browser, supports groups on a shared TV and fully remote pla
 - **Match** — One head-to-head pairing of two Items within a Round. All Players debate and vote in every Match.
 - **Round** — All Matches within the same elimination tier, run sequentially one at a time. A new Draw follows each Round.
 - **Assignment** — The Item a Player is secretly told to defend for a given Round. Delivered in-app via Long-Press Reveal. Pure random assignment; multiple Players may share the same Assignment in a Round.
-- **Wild** — An Item with no Player assigned to it at session start. Wild count = Bracket size − (Players × items-owned-per-player), configured by the Host.
 - **Board** — A login-free, display-only app view (`/room/{code}/board`) showing public game state: Match cards, live vote tally, champion, Post-Game Reveal. No secret information. Designed to run on a TV, projector, or shared screen.
 - **Player View** — The personal app view on each Player's device. Shows the Assignment card, vote buttons, current Match state, and Post-Game Reveal.
 - **Host Panel** — A control overlay visible only on the Host's device (on top of their Player View). Controls: Pool approval, Call Vote, Coin Flip, Next Match.
 - **Long-Press Reveal** — A press-and-hold gesture that surfaces a Player's Assignment card. Obscures immediately on release.
 - **Coin Flip** — Host-triggered tiebreak on a tied Vote. Heads = Item A advances, Tails = Item B. Result shown on Board and all Player Views.
-- **Post-Game Reveal** — The session-end screen showing the full Assignment history: each Player, each Round, each Item defended. Wilds labelled explicitly.
+- **Post-Game Reveal** — The session-end screen showing the full Assignment history: each Player, each Round, each Item defended.
 
 ---
 
@@ -92,10 +91,9 @@ Player can join a Room by entering a code, a display name, and a colour. Realize
 - Display names must be unique within a Room; duplicates are rejected with an inline error.
 
 #### FR-3: Session configuration
-Host can set Bracket size (8 / 16 / 32; default 16) and items owned per Player (1–6; determines Wild count) before starting.
+Host can set Bracket size (8 / 16 / 32; default 16) before starting.
 
 **Consequences:**
-- Wild count = Bracket size − (Players × items-owned-per-player). System warns the Host if the result is negative before allowing start.
 - Configuration is locked once the Host triggers Pool generation.
 
 ---
@@ -164,7 +162,6 @@ Server assigns each Player their starting Items before Round 1.
 
 **Consequences:**
 - Each Player's Assignment is sent only to their own socket connection.
-- Wild Items are tracked server-side; not disclosed to any Player until Post-Game Reveal.
 
 #### FR-11: Round-start Assignment update
 At the start of each Round, each Player's device receives their Assignment for that Round.
@@ -253,7 +250,6 @@ Host confirms the result and advances to the next Match or Round.
 The winning Item is displayed on the Board and all Player Views.
 
 **Consequences:**
-- If the champion is a Wild, this is stated explicitly: "This item had no owner."
 - Host advances to the Assignment history reveal.
 
 #### FR-20: Full Assignment history reveal
@@ -262,7 +258,6 @@ The app shows a table: each Player, each Round, each Item they defended.
 **Consequences:**
 - Triggered by the Host after the champion screen.
 - Table shows starting Assignments and all subsequent round-by-round reassignments.
-- Wilds are labelled as Wilds throughout.
 - No export or external sharing in v1.
 
 ---
@@ -287,7 +282,6 @@ The app shows a table: each Player, each Round, each Item they defended.
 - Multi-tool LLM Pool generation ranked by popularity
 - Host Pool curation: select, partial regen with Boost Keyword, up to 3 manual entries
 - Bracket sizes: 8 / 16 (default) / 32
-- Host-configurable items-owned-per-Player and Wild count
 - Secret Assignment via Long-Press Reveal — same mechanic on all devices
 - Auto-reassignment each Round when a Player's Item is eliminated; pure random
 - Match loop: reveal → debate → Host calls Vote → live votes by colour → advance
@@ -328,7 +322,7 @@ Hobby project. Success = sessions run end-to-end without technical intervention,
 - §3 Player — min 3, max 8 Players per Room.
 - §4.2 FR-8 — 60-second Pool reveal window before Round 1; Host can advance early.
 - §4.2 FR-6 — Host may trigger partial regeneration up to 3 times per session.
-- §4.3 FR-9 — Round 1 pairing constraint (no same-owner Items) is best-effort; relaxed if configuration makes it impossible.
+- §4.3 FR-9 — Round 1 pairing constraint (no two Players share the same Assignment) is best-effort; relaxed if configuration makes it impossible.
 - §4.3 FR-11 — Auto-reassignment is pure random; multiple Players may share the same Assignment in a Round.
 - §4.4 FR-12 — Co-located Players are trusted not to share phone screens with others.
 - §4.6 FR-20 — No export or sharing of Post-Game Reveal in v1.

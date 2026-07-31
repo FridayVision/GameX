@@ -91,35 +91,7 @@
                     0 28px 55px -10px rgba(0,0,0,0.85);
             }
         }
-        @keyframes wild-pulse {
-            0%, 100% {
-                box-shadow:
-                    0 0 0 2px #15F4C7,
-                    0 0 40px  rgba(21,244,199,0.45),
-                    0 0 100px rgba(21,244,199,0.18),
-                    0 28px 55px -10px rgba(0,0,0,0.85);
-            }
-            50% {
-                box-shadow:
-                    0 0 0 2px #15F4C7,
-                    0 0 70px  rgba(21,244,199,0.72),
-                    0 0 160px rgba(21,244,199,0.32),
-                    0 28px 55px -10px rgba(0,0,0,0.85);
-            }
-        }
-
-        .champion-card          { animation: champ-pulse 2.6s ease-in-out infinite; }
-        .champion-card.is-wild  { animation: wild-pulse  2.6s ease-in-out infinite; }
-
-        /* ── Wild badge ─────────────────────────────────────────────── */
-        .wild-badge {
-            display: none;
-            position: absolute; top: 16px; left: 16px; z-index: 10;
-            background: #15F4C7; color: #060d05;
-            font-size: 0.65rem; font-weight: 900; letter-spacing: 0.14em;
-            text-transform: uppercase; padding: 5px 12px; border-radius: 5px;
-        }
-        body.is-wild .wild-badge { display: block; }
+        .champion-card { animation: champ-pulse 2.6s ease-in-out infinite; }
 
         /* ── Card image / colour grading ────────────────────────────── */
         .layer-warm::after {
@@ -198,27 +170,6 @@
         .d-800 { transition-delay: 800ms; }
         .d-900 { transition-delay: 900ms; }
 
-        /* ── Wild note ──────────────────────────────────────────────── */
-        .wild-note {
-            display: none;
-            font-size: 0.82rem; font-weight: 500; letter-spacing: 0.05em;
-            color: #15F4C7; margin-top: 6px;
-        }
-        body.is-wild .wild-note { display: block; }
-
-        /* ── Dev toggle ──────────────────────────────────────────────── */
-        #state-toggle {
-            position: fixed; bottom: 16px; right: 20px; z-index: 100;
-            font-family: 'Space Grotesk', sans-serif;
-            font-size: 11px; font-weight: 600; letter-spacing: 0.08em;
-            color: rgba(250,255,254,0.35);
-            background: rgba(8,14,7,0.50);
-            border: 1px solid rgba(250,255,254,0.10);
-            border-radius: 6px; padding: 5px 12px; cursor: pointer;
-            text-transform: uppercase;
-            transition: color 0.2s, border-color 0.2s;
-        }
-        #state-toggle:hover { color: rgba(250,255,254,0.75); border-color: rgba(250,255,254,0.25); }
     </style>
 </head>
 
@@ -232,7 +183,7 @@
     <div class="champion-spotlight" aria-hidden="true"></div>
 
     <!-- ── TOP BAR ──────────────────────────────────────────────────── -->
-    <header class="relative z-10 w-full px-12 py-5 flex justify-between items-center"
+    <header class="relative z-10 w-full px-12 py-5 flex items-center"
             style="border-bottom:1px solid rgba(250,255,254,0.08)">
 
         <div class="reveal-fade-up d-100"
@@ -241,14 +192,6 @@
                     color:rgba(250,255,254,0.55);letter-spacing:0.14em;text-transform:uppercase;
                     font-size:0.78rem;font-weight:600">
             ROUND 4 OF 4 <span style="opacity:0.4;margin:0 6px">·</span> FINAL
-        </div>
-
-        <div class="reveal-fade-up d-200">
-            <span style="background:#ec5838;color:#fafffe;padding:6px 24px;border-radius:6px;
-                         font-weight:700;letter-spacing:0.14em;text-transform:uppercase;font-size:0.85rem;
-                         box-shadow:0 0 28px rgba(236,88,56,0.40)">
-                CHAMPION
-            </span>
         </div>
     </header>
 
@@ -281,9 +224,6 @@
                         position:relative;outline:1px solid rgba(255,255,255,0.12);
                         transition:animation 0.4s">
 
-                <!-- Wild badge (hidden by default) -->
-                <div class="wild-badge">WILD</div>
-
                 <!-- Image -->
                 <div class="layer-warm"
                      style="position:absolute;inset:0;
@@ -309,10 +249,6 @@
                 </div>
             </div>
 
-            <!-- Wild note below card -->
-            <p class="wild-note" style="text-align:center">
-                No one owned this. A wild won.
-            </p>
         </div>
 
         <!-- ── Path of beaten items ──────────────────────────────────── -->
@@ -379,22 +315,9 @@
     </main>
 
 
-    <!-- ── Dev toggle ───────────────────────────────────────────────── -->
-    <button id="state-toggle" onclick="toggleWild()">&#8594; Wild Champion</button>
-
     <script>
         requestAnimationFrame(() => setTimeout(() =>
             document.getElementById('app-root').classList.add('is-loaded'), 80));
-
-        let isWild = false;
-
-        function toggleWild() {
-            isWild = !isWild;
-            document.body.classList.toggle('is-wild', isWild);
-            document.getElementById('champion-card').classList.toggle('is-wild', isWild);
-            document.getElementById('state-toggle').textContent =
-                isWild ? '\u2190 Normal Champion' : '\u2192 Wild Champion';
-        }
     </script>
 </body>
 </html>

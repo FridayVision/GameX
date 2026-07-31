@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GameX — Board · Who Defended What</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700;900&display=swap" rel="stylesheet">
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>tailwind.config = { theme: { extend: { fontFamily: { sans: ['Space Grotesk','sans-serif'] } } } }</script>
+
+    <style>
+        *, *::before, *::after { box-sizing: border-box; }
+
+        body {
+            font-family: 'Space Grotesk', sans-serif;
+            width: 100vw; height: 100vh;
+            overflow: hidden;
+            background-color: #060d05;
+            color: #fafffe;
+        }
+
+        /* ── LED background ──────────────────────────────────────────── */
+        .led-dots {
+            position: absolute; inset: 0; z-index: 0;
+            background-image: radial-gradient(circle, rgba(250,255,254,0.24) 1.5px, transparent 1.5px);
+            background-size: 26px 26px;
+            animation: dots-breathe 6s ease-in-out infinite;
+        }
+        @keyframes dots-breathe { 0%,100% { opacity:0.50; } 50% { opacity:0.95; } }
+
+        .led-orange {
+            position: absolute; inset: 0; z-index: 0;
+            background:
+                radial-gradient(ellipse 95% 78% at 8%  92%, rgba(236,88,56,0.28) 0%, rgba(190,48,10,0.12) 38%, transparent 62%),
+                radial-gradient(ellipse 60% 45% at 50%   0%, rgba(220,72,30,0.14) 0%, transparent 55%);
+        }
+        .led-teal {
+            position: absolute; inset: 0; z-index: 0;
+            background:
+                radial-gradient(ellipse 55% 45% at 96%  8%, rgba(21,244,199,0.10) 0%, transparent 58%),
+                radial-gradient(ellipse 35% 28% at 90% 80%, rgba(21,244,199,0.04) 0%, transparent 50%);
+        }
+        .led-void {
+            position: absolute; inset: 0; z-index: 0;
+            background: radial-gradient(ellipse 72% 72% at 50% 50%, rgba(4,9,3,0.90) 0%, rgba(6,12,5,0.52) 50%, transparent 72%);
+        }
+
+        /* ── Table grid ──────────────────────────────────────────────── */
+        .t-row {
+            display: grid;
+            grid-template-columns: 260px repeat(4, 1fr);
+            align-items: stretch;
+        }
+
+        /* ── Column header cells ─────────────────────────────────────── */
+        .col-head {
+            padding: 0 28px 14px;
+            font-size: 0.72rem; font-weight: 700; letter-spacing: 0.20em;
+            text-transform: uppercase; color: rgba(250,255,254,0.28);
+        }
+
+        /* ── Player rows ─────────────────────────────────────────────── */
+        .player-row {
+            position: relative;
+            border-left: 4px solid var(--pc);
+            border-bottom: 1px solid rgba(250,255,254,0.07);
+            opacity: 0;
+            transform: translateY(14px);
+            transition: opacity 0.55s cubic-bezier(0.16,1,0.3,1),
+                        transform 0.55s cubic-bezier(0.16,1,0.3,1);
+        }
+        /* Faint player colour tint across the row */
+        .player-row::before {
+            content: '';
+            position: absolute; inset: 0;
+            background: var(--pc);
+            opacity: 0.035;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .is-loaded .player-row { opacity: 1; transform: translateY(0); }
+        .is-loaded .row-0 { transition-delay: 160ms; }
+        .is-loaded .row-1 { transition-delay: 300ms; }
+        .is-loaded .row-2 { transition-delay: 440ms; }
+        .is-loaded .row-3 { transition-delay: 580ms; }
+
+        /* ── Name cell ───────────────────────────────────────────────── */
+        .cell-name {
+            position: relative; z-index: 1;
+            padding: 24px 24px 24px 20px;
+            display: flex; align-items: center; gap: 13px;
+        }
+        .pdot {
+            width: 18px; height: 18px; border-radius: 50%; flex-shrink: 0;
+        }
+        .pname { font-size: 1.10rem; font-weight: 700; color: rgba(250,255,254,0.90); }
+        .host-tag {
+            font-size: 0.52rem; font-weight: 800; letter-spacing: 0.12em;
+            text-transform: uppercase; padding: 2px 7px; border-radius: 3px;
+            background: rgba(236,88,56,0.13); border: 1px solid rgba(236,88,56,0.30);
+            color: #ec5838;
+        }
+
+        /* ── Item cells ──────────────────────────────────────────────── */
+        .cell-item {
+            position: relative; z-index: 1;
+            padding: 24px 28px;
+            display: flex; align-items: center; gap: 9px;
+            font-size: 0.95rem; font-weight: 600;
+            color: rgba(250,255,254,0.45);
+            border-left: 1px solid rgba(250,255,254,0.05);
+        }
+
+        /* Champion cell */
+        .cell-champ {
+            color: rgba(250,255,254,0.88);
+            background: rgba(236,88,56,0.08);
+        }
+        .cell-champ::after {
+            content: '';
+            position: absolute;
+            left: 0; top: 14px; bottom: 14px;
+            width: 2px;
+            background: rgba(236,88,56,0.62);
+            border-radius: 1px;
+        }
+
+        /* ── Entrance animations ─────────────────────────────────────── */
+        .reveal-fade-up {
+            opacity: 0; transform: translateY(16px);
+            transition: opacity 0.70s cubic-bezier(0.16,1,0.3,1),
+                        transform  0.70s cubic-bezier(0.16,1,0.3,1);
+        }
+        .is-loaded .reveal-fade-up { opacity: 1; transform: translateY(0); }
+        .d-50  { transition-delay:  50ms; }
+        .d-100 { transition-delay: 100ms; }
+
+        /* ── Dev toggle ──────────────────────────────────────────────── */
+        #dev-toggle {
+            position: fixed; bottom: 20px; right: 20px; z-index: 100;
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase;
+            color: rgba(250,255,254,0.35);
+            background: rgba(8,14,7,0.55);
+            border: 1px solid rgba(250,255,254,0.10);
+            border-radius: 6px; padding: 5px 13px; cursor: pointer;
+            transition: color 0.2s, border-color 0.2s;
+        }
+        #dev-toggle:hover { color: rgba(250,255,254,0.75); border-color: rgba(250,255,254,0.24); }
+    </style>
+</head>
+
+<body id="app-root">
+
+    <!-- ── LED background ──────────────────────────────────────────── -->
+    <div class="led-dots"   aria-hidden="true"></div>
+    <div class="led-orange" aria-hidden="true"></div>
+    <div class="led-teal"   aria-hidden="true"></div>
+    <div class="led-void"   aria-hidden="true"></div>
+
+    <!-- ── CONTENT ────────────────────────────────────────────────── -->
+    <div class="relative z-10 w-full h-full flex flex-col" style="padding:48px 80px 40px">
+
+        <!-- ══ HEADER ═════════════════════════════════════════════════ -->
+        <header class="flex items-center justify-between shrink-0 mb-8 gap-6">
+
+            <!-- Hero title — card bg for LED readability -->
+            <div class="reveal-fade-up d-50"
+                 style="background:rgba(6,10,5,0.82);backdrop-filter:blur(14px);
+                        border:1px solid rgba(250,255,254,0.10);border-radius:14px;
+                        padding:18px 30px;box-shadow:0 0 0 1px rgba(0,0,0,.70),0 8px 32px rgba(0,0,0,.55)">
+                <p style="font-size:0.72rem;font-weight:700;letter-spacing:0.22em;text-transform:uppercase;
+                          color:rgba(250,255,254,0.30);margin:0 0 5px">Post-Game Reveal</p>
+                <h1 style="font-size:2.80rem;font-weight:900;letter-spacing:-0.01em;text-transform:uppercase;
+                           color:#fafffe;margin:0;line-height:1">Who Defended What</h1>
+            </div>
+
+            <!-- Champion info pill -->
+            <div class="reveal-fade-up d-100"
+                 style="display:flex;align-items:center;gap:12px;
+                        background:rgba(6,10,5,0.82);backdrop-filter:blur(14px);
+                        border:1px solid rgba(250,255,254,0.10);border-radius:14px;
+                        padding:18px 24px;box-shadow:0 0 0 1px rgba(0,0,0,.70),0 8px 32px rgba(0,0,0,.55)">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="#ec5838" style="flex-shrink:0">
+                    <path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 17.3l-6.2 4.3 2.4-7.4L2 9.4h7.6z"/>
+                </svg>
+                <div>
+                    <p style="font-size:0.60rem;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;
+                              color:rgba(250,255,254,0.30);margin:0 0 2px">Champion</p>
+                    <p style="font-size:1.10rem;font-weight:700;color:#ec5838;margin:0">
+                        Thiruda Thiruda
+                    </p>
+                </div>
+            </div>
+
+        </header>
+
+        <!-- ══ TABLE ═══════════════════════════════════════════════════ -->
+        <div class="flex-1 flex flex-col min-h-0">
+
+            <!-- Column headers -->
+            <div class="t-row reveal-fade-up d-100">
+                <div class="col-head" style="color:transparent;user-select:none">Players</div>
+                <div class="col-head">R1</div>
+                <div class="col-head">R2</div>
+                <div class="col-head">Semi</div>
+                <div class="col-head">Final</div>
+            </div>
+
+            <!-- Divider -->
+            <div class="reveal-fade-up d-100"
+                 style="height:1px;background:rgba(250,255,254,0.10);margin-bottom:6px"></div>
+
+            <!-- ── Raahul · Host · orange ─────────────────────────── -->
+            <div class="t-row player-row row-0" style="--pc:#ec5838">
+                <div class="cell-name">
+                    <div class="pdot" style="background:#ec5838;box-shadow:0 0 10px rgba(236,88,56,.50)"></div>
+                    <span class="pname">Raahul</span>
+                    <span class="host-tag">Host</span>
+                </div>
+                <div class="cell-item cell-champ">Thiruda Thiruda</div>
+                <div class="cell-item cell-champ">Thiruda Thiruda</div>
+                <div class="cell-item cell-champ">Thiruda Thiruda</div>
+                <div class="cell-item cell-champ">Thiruda Thiruda</div>
+            </div>
+
+            <!-- ── Padma · teal ───────────────────────────────────── -->
+            <div class="t-row player-row row-1" style="--pc:#15F4C7">
+                <div class="cell-name">
+                    <div class="pdot" style="background:#15F4C7;box-shadow:0 0 10px rgba(21,244,199,.42)"></div>
+                    <span class="pname">Padma</span>
+                </div>
+                <div class="cell-item">Minsara Kanavu</div>
+                <div class="cell-item">Mudhalvan</div>
+                <div class="cell-item">Mudhalvan</div>
+                <div class="cell-item cell-champ">Thiruda Thiruda</div>
+            </div>
+
+            <!-- ── Sri · yellow ──────────────────────────────────── -->
+            <div class="t-row player-row row-2" style="--pc:#FFE66D">
+                <div class="cell-name">
+                    <div class="pdot" style="background:#FFE66D;box-shadow:0 0 10px rgba(255,230,109,.40)"></div>
+                    <span class="pname">Sri</span>
+                </div>
+                <div class="cell-item">Kadhalan</div>
+                <div class="cell-item">Kadhalan</div>
+                <div class="cell-item">Gentleman</div>
+                <div class="cell-item">Gentleman</div>
+            </div>
+
+            <!-- ── Derin · mint ───────────────────────────────────── -->
+            <div class="t-row player-row row-3" style="--pc:#A8E6CF">
+                <div class="cell-name">
+                    <div class="pdot" style="background:#A8E6CF;box-shadow:0 0 10px rgba(168,230,207,.38)"></div>
+                    <span class="pname">Derin</span>
+                </div>
+                <div class="cell-item">Mudhalvan</div>
+                <div class="cell-item">Mudhalvan</div>
+                <div class="cell-item">Mudhalvan</div>
+                <div class="cell-item">Gentleman</div>
+            </div>
+
+        </div>
+
+    </div>
+
+    <script>
+        requestAnimationFrame(() => setTimeout(() =>
+            document.getElementById('app-root').classList.add('is-loaded'), 80));
+    </script>
+</body>
+</html>
