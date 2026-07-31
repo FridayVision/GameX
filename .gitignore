@@ -1,12 +1,40 @@
-# macOS
+# ── macOS ────────────────────────────────────────────────────────
 .DS_Store
 
-# BMAD
+# ── Next.js ──────────────────────────────────────────────────────
+.next/
+out/
+
+# ── Dependencies ─────────────────────────────────────────────────
+node_modules/
+
+# ── Environment variables ─────────────────────────────────────────
+# Keep .env.example in git — never commit the real ones
+.env
+.env.local
+.env.*.local
+
+# ── TypeScript ───────────────────────────────────────────────────
+*.tsbuildinfo
+
+# ── Logs ─────────────────────────────────────────────────────────
+*.log
+npm-debug.log*
+
+# ── Deployment ───────────────────────────────────────────────────
+.vercel/
+
+# ── Python (LLM tools — added when tools/ folder is created) ─────
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# ── Testing (uncomment when tests are added) ─────────────────────
+# coverage/
+
+# ── Project tooling (local only, not for collaborators) ──────────
 _bmad/
 _bmad-output/
-
-# Claude
 .claude/
-
 .aidesigner/
-
