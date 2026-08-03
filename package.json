@@ -3,10 +3,10 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
+    "dev": "tsx server.ts",
     "build": "next build",
-    "start": "next start",
-    "lint": "next lint",
+    "start": "NODE_ENV=production tsx server.ts",
+    "lint": "eslint .",
     "type-check": "tsc --noEmit",
     "format": "prettier --write .",
     "prepare": "husky"
@@ -28,6 +28,7 @@
     ]
   },
   "devDependencies": {
+    "@eslint/eslintrc": "^3.3.6",
     "@tailwindcss/postcss": "^4.3.3",
     "@types/node": "^26.1.2",
     "@types/react": "^19.2.18",
@@ -40,6 +41,7 @@
     "postcss": "^8.5.25",
     "prettier": "^3.9.6",
     "tailwindcss": "^4.3.3",
+    "tsx": "^4.23.5",
     "typescript": "^6.0.3"
   }
 }

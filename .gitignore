@@ -36,5 +36,6 @@ venv/
 # ── Project tooling (local only, not for collaborators) ──────────
 _bmad/
 _bmad-output/
+_plans/
 .claude/
 .aidesigner/
