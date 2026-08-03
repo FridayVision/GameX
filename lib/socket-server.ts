@@ -1,5 +1,6 @@
 import { Server } from 'socket.io'
 import type { Server as HTTPServer } from 'http'
+import { EVENTS } from './socket-events'
 
 export function initSocketServer(httpServer: HTTPServer): void {
   const io = new Server(httpServer, {
@@ -24,4 +25,6 @@ export function initSocketServer(httpServer: HTTPServer): void {
   })
 
   console.log('[socket] /board and /player namespaces ready')
+  // EVENTS will be used in M2 handlers (e.g. EVENTS.PLAYER_JOINED, EVENTS.ASSIGNMENT, etc.)
+  void EVENTS
 }

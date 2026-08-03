@@ -34,15 +34,15 @@ _One-time setup. Must be complete before any feature work._
 
 _Cross-cutting. Everything else imports from here._
 
-- [ ] Create `types/room.types.ts` — `RoomStatus`, `BracketSize`, `RoomConfig`
-- [ ] Create `types/player.types.ts` — `PlayerState`, `PlayerStatus`, `DisconnectedPlayer`
-- [ ] Create `types/item.types.ts` — `Item`, `ItemSource`
-- [ ] Create `types/match.types.ts` — `Match`, `MatchRecord`
-- [ ] Create `types/assignment.types.ts` — `AssignmentRecord`, `AssignmentPayload`
-- [ ] Create `lib/socket-events.ts` — `EVENTS` constants object, `EventName` type
-- [ ] Create `lib/room-store.ts` — `Map<roomId, RoomState>` + CRUD interface (`createRoom`, `getRoom`, `updateRoom`, `deleteRoom`)
+- [x] Create `types/room.types.ts` — `RoomStatus`, `BracketSize`, `RoomConfig`
+- [x] Create `types/player.types.ts` — `PlayerState`, `PlayerStatus`, `DisconnectedPlayer`
+- [x] Create `types/item.types.ts` — `Item`, `ItemSource`
+- [x] Create `types/match.types.ts` — `Match`, `MatchRecord`
+- [x] Create `types/assignment.types.ts` — `AssignmentRecord`, `AssignmentPayload`
+- [x] Create `lib/socket-events.ts` — `EVENTS` constants object, `EventName` type
+- [x] Create `lib/room-store.ts` — `Map<roomId, RoomState>` + CRUD interface (`createRoom`, `getRoom`, `updateRoom`, `deleteRoom`)
 - [x] Create `lib/socket-server.ts` — `initSocketServer(httpServer)`: mounts Socket.IO, sets up `/board` and `/player` namespaces, registers connection handlers (stub — game logic in Milestone 2+)
-- [ ] Create `lib/bracket-engine.ts` — `drawRound(survivingItems)` → `Match[]`, `runAssignment(room, roundIndex)` → `AssignmentRecord[]`
+- [x] Create `lib/bracket-engine.ts` — `drawRound(survivingItems)` → `Match[]`, `runAssignment(room, roundIndex)` → `AssignmentRecord[]`
 
 ---
 
@@ -134,7 +134,7 @@ _Final match → champion → assignment history table._
 
 ## Cross-Cutting / Infrastructure
 
-- [x] Define Socket.IO event constants — `lib/socket-events.ts` (done as part of Milestone 1)
+- [x] Define Socket.IO event constants — `lib/socket-events.ts` (done in Milestone 1)
 - [ ] Enforce `/board` namespace receives no assignment data — code review gate: no assignment field in any payload emitted to `/board`
 - [ ] Bracket size UI — host can pick 8 / 16 / 32 in lobby before pool generation; stored in `room.bracketSize`; used by pool generator and bracket engine
 - [ ] Token validation middleware — shared `validateHostToken(req, roomId)` and `validatePlayerToken(req, roomId)` helpers used by all API routes
