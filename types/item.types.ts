@@ -8,4 +8,6 @@ export interface Item {
   imageUrl: string | null
   source: ItemSource
   popularityScore: number
+  voteCount?: number // TMDB total ratings — primary popularity signal
+  voteAverage?: number // TMDB average rating (0–10)
 }
