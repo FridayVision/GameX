@@ -14,7 +14,9 @@ export interface RoomState {
   roomId: string
   roomCode: string // 4 numeric digits, e.g. "1234"
   hostId: string // set by create API after first player record; empty string initially
+  hostToken: string // validates HOST_* API calls; rotated on reclaim
   reclaimCode: string // 4 lowercase alphanumeric chars, e.g. "ab99"
+  topic: string // debate topic set by host during pool generation
   status: RoomStatus
   bracketSize: BracketSize
   players: Map<string, PlayerState>

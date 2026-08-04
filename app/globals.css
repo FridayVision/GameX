@@ -24,3 +24,128 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
+
+/* ── LED dot backgrounds — used on all screens ── */
+.led-orange {
+  position: absolute;
+  inset: -5%;
+  background-image: radial-gradient(circle, #ec5838 2px, transparent 2.1px);
+  background-size: 24px 24px;
+  opacity: 0.85;
+  -webkit-mask-image: radial-gradient(
+    ellipse 160% 140% at 100% 100%,
+    black 15%,
+    black 40%,
+    transparent 72%
+  );
+  mask-image: radial-gradient(
+    ellipse 160% 140% at 100% 100%,
+    black 15%,
+    black 40%,
+    transparent 72%
+  );
+}
+.led-teal {
+  position: absolute;
+  inset: -5%;
+  background-image: radial-gradient(circle, #15f4c7 2px, transparent 2.1px);
+  background-size: 24px 24px;
+  opacity: 0.85;
+  -webkit-mask-image: radial-gradient(
+    ellipse 160% 140% at 0% 0%,
+    black 15%,
+    black 40%,
+    transparent 72%
+  );
+  mask-image: radial-gradient(ellipse 160% 140% at 0% 0%, black 15%, black 40%, transparent 72%);
+}
+
+/* ── Thin scrollbar — lobby player lists ── */
+.scroll-thin {
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(250, 255, 254, 0.09) transparent;
+}
+.scroll-thin::-webkit-scrollbar {
+  width: 3px;
+}
+.scroll-thin::-webkit-scrollbar-thumb {
+  background: rgba(250, 255, 254, 0.1);
+  border-radius: 2px;
+}
+
+/* ── Animations ── */
+@keyframes pop {
+  0% {
+    transform: scale(0.5);
+    opacity: 0;
+  }
+  70% {
+    transform: scale(1.08);
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+.anim-pop {
+  animation: pop 0.45s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes glow-pulse {
+  0%,
+  100% {
+    box-shadow:
+      0 0 0 0 transparent,
+      0 0 16px var(--glow-col, transparent);
+  }
+  50% {
+    box-shadow:
+      0 0 0 10px rgba(0, 0, 0, 0.03),
+      0 0 28px var(--glow-col, transparent);
+  }
+}
+.anim-glow-pulse {
+  animation: glow-pulse 2.8s ease-in-out infinite;
+}
+
+@keyframes waiting-dot {
+  0%,
+  100% {
+    opacity: 0.18;
+  }
+  50% {
+    opacity: 0.9;
+  }
+}
+.anim-waiting-dot {
+  animation: waiting-dot 1.6s ease-in-out infinite;
+}
+
+@keyframes pulse-dot {
+  0%,
+  100% {
+    opacity: 0.22;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+.anim-pulse-dot {
+  animation: pulse-dot 1.8s ease-in-out infinite;
+}
+
+@keyframes player-in {
+  from {
+    opacity: 0;
+    transform: translateX(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+.anim-player-in {
+  animation: player-in 0.3s cubic-bezier(0.16, 1, 0.3, 1) both;
+}

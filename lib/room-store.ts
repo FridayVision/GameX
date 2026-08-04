@@ -1,7 +1,14 @@
 import { randomBytes } from 'crypto'
 import type { RoomState, RoomConfig } from '@/types/room.types'
 
-const rooms = new Map<string, RoomState>()
+// Store on process (immune to Next.js webpack module isolation in dev mode)
+type ProcessWithRooms = NodeJS.Process & { __rooms?: Map<string, RoomState> }
+
+function getRooms(): Map<string, RoomState> {
+  const p = process as ProcessWithRooms
+  if (!p.__rooms) p.__rooms = new Map()
+  return p.__rooms
+}
 
 // Room code: 4 numeric digits (e.g. "1234")
 function generateRoomCode(): string {
@@ -36,7 +43,9 @@ export function createRoom(config: RoomConfig): RoomState {
     roomId,
     roomCode,
     hostId: '', // set by create API after player record created
+    hostToken: '', // set by create API
     reclaimCode,
+    topic: '',
     status: 'lobby',
     bracketSize: config.bracketSize,
     players: new Map(),
@@ -50,17 +59,17 @@ export function createRoom(config: RoomConfig): RoomState {
     disconnectedPlayers: new Map(),
   }
 
-  rooms.set(roomId, room)
+  getRooms().set(roomId, room)
   return room
 }
 
 export function getRoom(roomId: string): RoomState | undefined {
-  return rooms.get(roomId)
+  return getRooms().get(roomId)
 }
 
 // O(n) scan — fine for MVP (max ~10 active rooms)
 export function getRoomByCode(roomCode: string): RoomState | undefined {
-  for (const room of rooms.values()) {
+  for (const room of getRooms().values()) {
     if (room.roomCode === roomCode) return room
   }
   return undefined
@@ -70,11 +79,11 @@ export function getRoomByCode(roomCode: string): RoomState | undefined {
 // returned by getRoom directly — Map is a reference type so no updateRoom call needed.
 // This is the Redis swap boundary per D-04: only this file changes if Redis is added.
 export function updateRoom(roomId: string, patch: Partial<RoomState>): void {
-  const room = rooms.get(roomId)
+  const room = getRooms().get(roomId)
   if (!room) throw new Error(`Room not found: ${roomId}`)
   Object.assign(room, patch)
 }
 
 export function deleteRoom(roomId: string): void {
-  rooms.delete(roomId)
+  getRooms().delete(roomId)
 }

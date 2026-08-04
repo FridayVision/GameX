@@ -9,6 +9,15 @@ export interface PlayerState {
   status: PlayerStatus
   socketId: string | null
   lastAssignedItemId: string | null
+  playerToken: string
+}
+
+export interface PlayerPublicState {
+  playerId: string
+  displayName: string
+  colour: PlayerColour
+  isHost: boolean
+  status: PlayerStatus
 }
 
 export interface DisconnectedPlayer {

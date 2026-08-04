@@ -1,6 +1,6 @@
 # GameX — Dev Task List
 
-Generated: 2026-07-27 | Last updated: 2026-08-03
+Generated: 2026-07-27 | Last updated: 2026-08-04 (M3 complete)
 Tech stack: Next.js 16 + Socket.IO 4 + TypeScript 6 + Tailwind 4
 Default config: 4 players, 16 items | Hosting: Railway (custom server)
 
@@ -43,6 +43,8 @@ _Cross-cutting. Everything else imports from here._
 - [x] Create `lib/room-store.ts` — `Map<roomId, RoomState>` + CRUD interface (`createRoom`, `getRoom`, `updateRoom`, `deleteRoom`)
 - [x] Create `lib/socket-server.ts` — `initSocketServer(httpServer)`: mounts Socket.IO, sets up `/board` and `/player` namespaces, registers connection handlers (stub — game logic in Milestone 2+)
 - [x] Create `lib/bracket-engine.ts` — `drawRound(survivingItems)` → `Match[]`, `runAssignment(room, roundIndex)` → `AssignmentRecord[]`
+- [x] Add design tokens to `app/globals.css` — `@theme` (Tailwind 4 utility generation) + `:root` vars (for inline `var()` in LED effect CSS) + body base styles
+- [x] Add Space Grotesk via `next/font/google` in `app/layout.tsx` — weights 400/500/700, variable `--font-sans`
 
 ---
 
@@ -50,15 +52,24 @@ _Cross-cutting. Everything else imports from here._
 
 _Players can create and join a room. Board and Player Views show the lobby._
 
-- [ ] `app/api/room/create/route.ts` — POST: validate bracketSize, create room in store, return `{ roomCode, hostToken, reclaimCode }`
-- [ ] `app/api/room/join/route.ts` — POST: validate roomCode + displayName (unique check) + colour, add player to room, return `{ playerId, playerToken }`, emit `PLAYER_JOINED` to room channels
-- [ ] `app/api/room/reclaim/route.ts` — POST: validate reclaimCode, issue new hostToken, emit `HOST_RECONNECTED`
-- [ ] `app/page.tsx` — home screen: create room form (bracketSize picker) + join room form (code + name + colour)
-- [ ] `app/room/[code]/page.tsx` — Player View shell: connects to `/player` namespace with `playerToken`; shows Host Panel overlay if `isHost`
-- [ ] `app/room/[code]/board/page.tsx` — Board View shell: connects to `/board` namespace with only `roomCode`; login-free
-- [ ] `components/player/lobby-screen.tsx` — room code display, player list (coloured dots), waiting state
-- [ ] `components/board/lobby-screen.tsx` — room code large display, connected player list, bracket size
-- [ ] `/player` namespace handler — on `connect`: validate playerToken, join roomId channel, sync current room state to reconnecting socket; on `disconnect`: start 60 s grace timer, emit `PLAYER_LEFT` with player colour
+- [x] `app/api/room/create/route.ts` — POST: validate bracketSize, create room in store, return `{ roomCode, hostToken, reclaimCode }`
+- [x] `app/api/room/join/route.ts` — POST: validate roomCode + displayName (unique check) + colour, add player to room, return `{ playerId, playerToken }`, emit `PLAYER_JOINED` to room channels
+- [x] `app/api/room/reclaim/route.ts` — POST: validate reclaimCode, issue new hostToken, emit `HOST_RECONNECTED`
+- [x] `app/api/room/[code]/route.ts` — GET: return public room info (roomId, bracketSize, status, hostName, takenColours)
+- [x] `lib/colours.ts` — HOST_COLOUR, PLAYER_COLOURS (7), toRgba()
+- [x] `lib/auth.ts` — generateToken, validateHostToken, validatePlayerToken, findPlayerByToken, toPublicState
+- [x] `lib/socket-server.ts` — expanded /board and /player handlers; getIO() singleton export
+- [x] `app/globals.css` — .led-orange, .led-teal, .scroll-thin, animation keyframes
+- [x] `app/page.tsx` — home screen: create room form (bracketSize picker) + join room form (code input)
+- [x] `app/room/[code]/join/page.tsx` — join form (name + colour picker) + host reclaim mode toggle
+- [x] `app/room/[code]/page.tsx` — Player View shell: reads sessionStorage, connects /player socket, shows HostLobbyScreen or PlayerLobbyScreen
+- [x] `app/room/[code]/board/page.tsx` — Board View shell: connects /board socket with roomCode only; login-free
+- [x] `components/shared/led-background.tsx` — LED dot grid reusable component
+- [x] `components/player/join-form.tsx` — name input + 7-colour picker + preview
+- [x] `components/player/lobby-screen.tsx` — identity card, topic info, player list, waiting footer
+- [x] `components/host/lobby-screen.tsx` — room code digits, reclaim code display, player list, start button
+- [x] `components/board/lobby-screen.tsx` — large room code digits, 8 player slots, status badge
+- [x] `/player` namespace handler — validate playerToken, join roomId channel, sync state, emit PLAYER_LEFT on disconnect
 
 ---
 
@@ -66,17 +77,25 @@ _Players can create and join a room. Board and Player Views show the lobby._
 
 _Host enters topic; pool generates with live progress; host curates and locks._
 
-- [ ] `tools/pool_generator.py` — orchestrator: spawns source tools in parallel, enforces 15 s per-source timeout, streams JSON progress events to stdout, deduplicates and ranks results, trims to `ceil(bracketSize × 1.5)`
-- [ ] `tools/sources/tmdb_search.py` — TMDB API search; returns `Item[]`
-- [ ] `tools/sources/reddit_search.py` — Reddit API search for popularity signals
-- [ ] `tools/sources/wikipedia_search.py` — Wikipedia thumbnail + first paragraph
-- [ ] `tools/sources/web_search.py` — general web search fallback
-- [ ] `tools/requirements.txt`
-- [ ] `app/api/pool/generate/route.ts` — POST: validate hostToken + roomCode, create job, spawn `pool_generator.py` subprocess, pipe stdout to `/board` namespace as `POOL_PROGRESS` events, emit `POOL_READY` on exit
-- [ ] `app/api/pool/boost/route.ts` — POST: partial regen with boost keyword; same job pattern; does not replace already-selected items
-- [ ] `app/api/pool/lock/route.ts` — POST: validate `selectedItemIds.length === bracketSize`, store `lockedItems`, trigger Milestone 4 draw
-- [ ] `components/host/pool-curation.tsx` — topic input, pool grid (image cards), select/deselect, manual entry (up to 3), boost keyword field, lock button; live progress overlay during generation
-- [ ] `components/board/pool-progress.tsx` — source-by-source progress indicators during generation; pool reveal grid after POOL_READY
+- [x] `tools/pool_generator.py` — orchestrator: spawns source tools in parallel, enforces 15 s per-source timeout, streams JSON progress events to stdout, deduplicates and ranks results, trims to `ceil(bracketSize × 1.5)`
+- [x] `tools/sources/tmdb_search.py` — TMDB API search; returns `Item[]`
+- [x] `tools/sources/reddit_search.py` — Reddit API search for popularity signals
+- [x] `tools/sources/wikipedia_search.py` — Wikipedia thumbnail + first paragraph
+- [x] `tools/sources/web_search.py` — general web search fallback (Brave Search API; skipped if no key)
+- [x] `tools/requirements.txt`
+- [x] `app/api/pool/generate/route.ts` — POST: validate hostToken + roomCode, create job, spawn `pool_generator.py` subprocess, pipe stdout to `/board` + `/player` namespaces as `POOL_PROGRESS` events, emit `POOL_READY` on exit
+- [x] `app/api/pool/boost/route.ts` — POST: partial regen with boost keyword; same job pattern; does not replace already-selected items
+- [x] `app/api/pool/lock/route.ts` — POST: validate `selectedItemIds.length === bracketSize`, store `lockedItems` + `survivingItems`, set `status = 'active'`
+- [x] `components/host/pool-curation.tsx` — pool grid (image cards), select/deselect, boost keyword field, lock button; live progress overlay during generation
+- [x] `components/board/pool-progress.tsx` — source-by-source progress indicators during generation; pool reveal grid after POOL_READY
+- [x] `lib/job-store.ts` — in-memory job tracking (global singleton, same pattern as socket-server)
+- [x] `hooks/use-player-socket.ts` — extended with POOL_PROGRESS + POOL_READY event handlers
+- [x] `hooks/use-board-socket.ts` — extended with POOL_PROGRESS + POOL_READY + topic
+- [x] `app/host/setup/page.tsx` — integrated pool generation phases (config → generating → curating)
+- [x] `app/room/[code]/board/page.tsx` — shows BoardPoolProgress during poolgen/poolreview, BoardLobbyScreen otherwise
+- [x] `types/room.types.ts` — added `topic: string` to RoomState
+- [x] `lib/room-store.ts` — initialises `topic: ''`
+- [x] `lib/socket-server.ts` — includes `topic` in PLAYER_JOINED emit
 
 ---
 
