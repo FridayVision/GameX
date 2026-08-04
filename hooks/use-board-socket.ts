@@ -6,6 +6,13 @@ import type { Item } from '@/types/item.types'
 import type { RoomStatus, BracketSize } from '@/types/room.types'
 import { EVENTS } from '@/lib/socket-events'
 
+export interface MatchPublic {
+  matchId: string
+  matchIndex: number
+  itemA: Item
+  itemB: Item
+}
+
 export interface BoardSourceProgress {
   source: string
   status: 'fetching' | 'done' | 'error'
@@ -22,6 +29,10 @@ export interface BoardRoomState {
   poolProgress: BoardSourceProgress[]
   pool: Item[]
   poolReady: boolean
+  roundIndex: number | null
+  totalRounds: number | null
+  roundMatches: MatchPublic[]
+  confirmedPlayerIds: string[]
 }
 
 export function useBoardSocket(roomCode: string | null) {
@@ -36,6 +47,10 @@ export function useBoardSocket(roomCode: string | null) {
     poolProgress: [],
     pool: [],
     poolReady: false,
+    roundIndex: null,
+    totalRounds: null,
+    roundMatches: [],
+    confirmedPlayerIds: [],
   })
 
   useEffect(() => {
@@ -77,6 +92,22 @@ export function useBoardSocket(roomCode: string | null) {
     )
     socket.on(EVENTS.POOL_READY, (data: { items: Item[] }) => {
       setRoomState((prev) => ({ ...prev, pool: data.items, poolReady: true }))
+    })
+    socket.on(
+      EVENTS.ROUND_START,
+      (data: { roundIndex: number; totalRounds: number; matches: MatchPublic[] }) => {
+        setRoomState((prev) => ({
+          ...prev,
+          status: 'active',
+          roundIndex: data.roundIndex,
+          totalRounds: data.totalRounds,
+          roundMatches: data.matches,
+          confirmedPlayerIds: [],
+        }))
+      }
+    )
+    socket.on(EVENTS.ASSIGNMENT_CONFIRMED, (data: { confirmedPlayerIds: string[] }) => {
+      setRoomState((prev) => ({ ...prev, confirmedPlayerIds: data.confirmedPlayerIds }))
     })
 
     return () => {

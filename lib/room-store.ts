@@ -52,6 +52,7 @@ export function createRoom(config: RoomConfig): RoomState {
     pool: [],
     lockedItems: [],
     survivingItems: [],
+    currentMatches: [],
     matchHistory: [],
     assignmentHistory: [],
     currentRound: 0,

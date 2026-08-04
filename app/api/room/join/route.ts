@@ -80,6 +80,7 @@ export async function POST(request: Request) {
     status: 'connected',
     socketId: null,
     lastAssignedItemId: null,
+    assignmentConfirmed: false,
     playerToken,
   })
 

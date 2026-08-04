@@ -9,6 +9,7 @@ export interface PlayerState {
   status: PlayerStatus
   socketId: string | null
   lastAssignedItemId: string | null
+  assignmentConfirmed: boolean
   playerToken: string
 }
 

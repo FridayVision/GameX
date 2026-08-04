@@ -9,6 +9,7 @@ interface PlayerLobbyScreenProps {
   players: PlayerPublicState[]
   currentPlayerId: string
   hostName: string
+  topic: string
 }
 
 export function PlayerLobbyScreen({
@@ -17,6 +18,7 @@ export function PlayerLobbyScreen({
   players,
   currentPlayerId,
   hostName,
+  topic,
 }: PlayerLobbyScreenProps) {
   const totalRounds = Math.log2(bracketSize)
   const me = players.find((p) => p.playerId === currentPlayerId)
@@ -74,7 +76,9 @@ export function PlayerLobbyScreen({
           <p className="text-[rgba(250,255,254,0.40)] text-[0.56rem] uppercase tracking-[0.26em] font-bold mb-1.5">
             Topic
           </p>
-          <p className="text-[rgba(250,255,254,0.80)] font-bold text-[1rem] mb-2">TBD</p>
+          <p className="text-[rgba(250,255,254,0.80)] font-bold text-[1rem] mb-2">
+            {topic || 'TBD'}
+          </p>
           <div className="flex items-center gap-1.5">
             <span className="text-[rgba(250,255,254,0.30)] text-[0.65rem]">
               {bracketSize} items

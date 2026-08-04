@@ -9,6 +9,9 @@ interface HostLobbyScreenProps {
   bracketSize: BracketSize
   players: PlayerPublicState[]
   currentPlayerId: string
+  topic: string
+  onStart: () => void
+  loading?: boolean
 }
 
 export function HostLobbyScreen({
@@ -17,9 +20,12 @@ export function HostLobbyScreen({
   bracketSize,
   players,
   currentPlayerId,
+  topic,
+  onStart,
+  loading = false,
 }: HostLobbyScreenProps) {
   const totalRounds = Math.log2(bracketSize)
-  const canStart = players.length >= 3
+  const canStart = players.length >= 3 && !loading
   const needMore = 3 - players.length
 
   return (
@@ -99,6 +105,14 @@ export function HostLobbyScreen({
           </div>
 
           <div className="flex items-center gap-1.5 justify-center flex-wrap">
+            {topic && (
+              <>
+                <span className="text-[rgba(250,255,254,0.55)] text-[0.74rem] font-semibold">
+                  {topic}
+                </span>
+                <span className="text-[rgba(250,255,254,0.22)] text-[0.65rem]">·</span>
+              </>
+            )}
             <span className="text-[rgba(250,255,254,0.32)] text-[0.68rem]">
               {bracketSize} items
             </span>
@@ -173,9 +187,10 @@ export function HostLobbyScreen({
           )}
           <button
             disabled={!canStart}
+            onClick={onStart}
             className="w-full h-[50px] bg-[#ec5838] text-white font-bold text-[0.97rem] rounded-[12px] shadow-[0_0_20px_rgba(236,88,56,0.24)] flex items-center justify-center gap-2 disabled:opacity-25 disabled:cursor-not-allowed transition-all active:scale-[0.97]"
           >
-            Start Game
+            {loading ? 'Starting…' : 'Start Game'}
             <svg
               width="13"
               height="13"

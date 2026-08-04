@@ -4,9 +4,12 @@ export interface AssignmentRecord {
   itemId: string
 }
 
+// Sent to individual player socket only — never emitted to /board
 export interface AssignmentPayload {
   itemId: string
   itemTitle: string
+  imageUrl: string | null
+  contextLine: string
   roundIndex: number
-  totalRounds: number // computed as Math.log2(bracketSize) at emit time
+  totalRounds: number // Math.log2(bracketSize)
 }

@@ -4,6 +4,7 @@ import { io, Socket } from 'socket.io-client'
 import type { PlayerPublicState } from '@/types/player.types'
 import type { Item } from '@/types/item.types'
 import type { RoomStatus, BracketSize } from '@/types/room.types'
+import type { AssignmentPayload } from '@/types/assignment.types'
 import { EVENTS } from '@/lib/socket-events'
 
 export interface PoolSourceProgress {
@@ -18,11 +19,15 @@ export interface PlayerRoomState {
   status: RoomStatus
   bracketSize: BracketSize | null
   roomCode: string
+  topic: string
   poolProgress: PoolSourceProgress[]
   pool: Item[]
   poolReady: boolean
   poolFailed: boolean
   poolError: string
+  assignment: AssignmentPayload | null
+  roundIndex: number | null
+  totalRounds: number | null
 }
 
 export function usePlayerSocket(roomId: string | null, playerToken: string | null) {
@@ -33,11 +38,15 @@ export function usePlayerSocket(roomId: string | null, playerToken: string | nul
     status: 'lobby',
     bracketSize: null,
     roomCode: '',
+    topic: '',
     poolProgress: [],
     pool: [],
     poolReady: false,
     poolFailed: false,
     poolError: '',
+    assignment: null,
+    roundIndex: null,
+    totalRounds: null,
   })
 
   useEffect(() => {
@@ -100,6 +109,17 @@ export function usePlayerSocket(roomId: string | null, playerToken: string | nul
     socket.on(EVENTS.POOL_READY, (data: { items: Item[] }) => {
       setRoomState((prev) => ({ ...prev, pool: data.items, poolReady: true }))
     })
+    socket.on(EVENTS.ROUND_START, (data: { roundIndex: number; totalRounds: number }) => {
+      setRoomState((prev) => ({
+        ...prev,
+        status: 'active',
+        roundIndex: data.roundIndex,
+        totalRounds: data.totalRounds,
+      }))
+    })
+    socket.on(EVENTS.ASSIGNMENT, (data: AssignmentPayload) => {
+      setRoomState((prev) => ({ ...prev, assignment: data }))
+    })
 
     return () => {
       socket.disconnect()
@@ -107,5 +127,9 @@ export function usePlayerSocket(roomId: string | null, playerToken: string | nul
     }
   }, [roomId, playerToken])
 
-  return { connected, roomState }
+  const confirmAssignment = () => {
+    socketRef.current?.emit(EVENTS.ASSIGNMENT_CONFIRMED)
+  }
+
+  return { connected, roomState, confirmAssignment }
 }

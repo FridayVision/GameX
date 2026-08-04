@@ -3,6 +3,7 @@ import { useParams } from 'next/navigation'
 import { LedBackground } from '@/components/shared/led-background'
 import { BoardLobbyScreen } from '@/components/board/lobby-screen'
 import { BoardPoolProgress } from '@/components/board/pool-progress'
+import { RoundStartScreen } from '@/components/board/round-start-screen'
 import { useBoardSocket } from '@/hooks/use-board-socket'
 import type { BracketSize } from '@/types/room.types'
 
@@ -14,7 +15,9 @@ export default function BoardPage() {
   const bracketSize = (roomState.bracketSize ?? 16) as BracketSize
 
   const showPool =
-    roomState.status === 'poolgen' || roomState.status === 'poolreview' || roomState.poolReady
+    (roomState.status === 'poolgen' || roomState.status === 'poolreview') && !roomState.poolReady
+      ? false
+      : roomState.poolReady && roomState.status !== 'active'
 
   return (
     <div className="h-screen flex flex-col">
@@ -25,7 +28,17 @@ export default function BoardPage() {
         GameX
       </div>
 
-      {showPool ? (
+      {roomState.status === 'active' && roomState.roundIndex !== null ? (
+        <RoundStartScreen
+          roundIndex={roomState.roundIndex}
+          totalRounds={roomState.totalRounds ?? Math.log2(bracketSize)}
+          matches={roomState.roundMatches}
+          bracketSize={bracketSize}
+          topic={roomState.topic}
+          players={roomState.players}
+          confirmedPlayerIds={roomState.confirmedPlayerIds}
+        />
+      ) : showPool || roomState.status === 'poolgen' || roomState.status === 'poolreview' ? (
         <BoardPoolProgress
           topic={roomState.topic}
           bracketSize={bracketSize}
@@ -34,7 +47,12 @@ export default function BoardPage() {
           poolReady={roomState.poolReady}
         />
       ) : (
-        <BoardLobbyScreen roomCode={code} bracketSize={bracketSize} players={roomState.players} />
+        <BoardLobbyScreen
+          roomCode={code}
+          bracketSize={bracketSize}
+          players={roomState.players}
+          topic={roomState.topic}
+        />
       )}
     </div>
   )

@@ -19,6 +19,8 @@ export const EVENTS = {
   ROUND_END: 'round-end',
   GAME_OVER: 'game-over',
   REVEAL_START: 'reveal-start',
+  // Player actions (client → server)
+  ASSIGNMENT_CONFIRMED: 'assignment-confirmed',
   // Host controls (client → server)
   HOST_CALL_VOTE: 'host-call-vote',
   HOST_NEXT_MATCH: 'host-next-match',

@@ -1,6 +1,6 @@
 import type { PlayerState, DisconnectedPlayer } from './player.types'
 import type { Item } from './item.types'
-import type { MatchRecord } from './match.types'
+import type { Match, MatchRecord } from './match.types'
 import type { AssignmentRecord } from './assignment.types'
 
 export type RoomStatus = 'lobby' | 'poolgen' | 'poolreview' | 'active' | 'ended'
@@ -23,6 +23,7 @@ export interface RoomState {
   pool: Item[]
   lockedItems: Item[]
   survivingItems: Item[]
+  currentMatches: Match[]
   matchHistory: MatchRecord[]
   assignmentHistory: AssignmentRecord[]
   currentRound: number
