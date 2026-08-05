@@ -1,6 +1,6 @@
 # GameX — Dev Task List
 
-Generated: 2026-07-27 | Last updated: 2026-08-04 (M3 complete)
+Generated: 2026-07-27 | Last updated: 2026-08-05 (M5 complete)
 Tech stack: Next.js 16 + Socket.IO 4 + TypeScript 6 + Tailwind 4
 Default config: 4 players, 16 items | Hosting: Railway (custom server)
 
@@ -103,11 +103,11 @@ _Host enters topic; pool generates with live progress; host curates and locks._
 
 _Server draws Round 1 pairings and delivers secret assignments to each player._
 
-- [ ] Pool lock handler → call `bracketEngine.drawRound(lockedItems)` for Round 1 → store matches → emit `ROUND_START` (public match list, no assignments) to `/board:roomCode`
-- [ ] Assignment handler → call `bracketEngine.runAssignment(room, roundIndex)` → store `AssignmentRecord[]` → emit `ASSIGNMENT` payload to each `/player` socket individually (never to room channel)
-- [ ] `components/player/assignment-card.tsx` — face-down card with long-press reveal: press-and-hold shows "You are defending: [Title] (Round N of M)"; releases back to face-down; auto-dismisses on `MATCH_START`
-- [ ] Board receives `ROUND_START` — shows round number and first match pair (no assignment data)
-- [ ] Round 1 constraint: `drawRound` attempts to avoid pairing items where two players share the same assignment in Match 1 (best-effort, relaxed if not possible)
+- [x] Pool lock handler → call `bracketEngine.drawRound(lockedItems)` for Round 1 → store matches → emit `ROUND_START` (public match list, no assignments) to `/board:roomCode`
+- [x] Assignment handler → call `bracketEngine.runAssignment(room, roundIndex)` → store `AssignmentRecord[]` → emit `ASSIGNMENT` payload to each `/player` socket individually (never to room channel)
+- [x] `components/player/assignment-card.tsx` — face-down card with hold-to-reveal (650 ms), 3D CSS flip, image fill, "I'm Ready" button, `ASSIGNMENT_CONFIRMED` socket event
+- [x] Board receives `ROUND_START` — shows `RoundStartScreen` with round number, player confirmation circles, real-time `confirmedPlayerIds` tracking
+- [x] Board and player restore full state on page refresh (PLAYER_JOINED payload enriched with active-game data; server re-sends ASSIGNMENT on reconnect)
 
 ---
 
@@ -115,12 +115,12 @@ _Server draws Round 1 pairings and delivers secret assignments to each player._
 
 _Core runtime: reveal → debate → vote → advance. Paced entirely by host._
 
-- [ ] `components/board/match-view.tsx` — two item cards side by side; live vote tally by player colour; player status row (connected / voted / waiting dot per player)
-- [ ] `components/player/match-view.tsx` — same two item cards; vote buttons (A / B) appear on `VOTE_OPEN`; vote locked after cast
-- [ ] `components/host/match-controls.tsx` — "Call Vote" button; live cast-count vs pending; "Coin Flip" button (visible only on tie); "Next Match" button after result
-- [ ] `/player` namespace — `HOST_CALL_VOTE`: validate hostToken, emit `VOTE_OPEN` to room channels; `PLAYER_VOTE`: record vote, emit `PLAYER_VOTE` (colour only, no name) to room channels; detect all-voted → emit `VOTE_RESULT`; `HOST_COIN_FLIP`: random heads/tails, emit `COIN_FLIP`; `HOST_NEXT_MATCH`: advance match index, emit `MATCH_START` or `ROUND_END`
-- [ ] `app/api/game/coin-flip/route.ts` — POST: validate hostToken, flip, return result; emit `COIN_FLIP` to room channels
-- [ ] Round advance: on `ROUND_END` → run new draw + reassignment → emit `ROUND_START` + individual `ASSIGNMENT` events → host sees "Next Round" on Host Panel
+- [x] `components/board/match-view.tsx` — two item cards side by side; live vote tally by player colour; player status row (connected / voted / waiting dot per player)
+- [x] `components/player/match-view.tsx` — same two item cards; vote buttons (A / B) appear on `VOTE_OPEN`; vote locked after cast
+- [x] `components/host/match-controls.tsx` — "Call Vote" button; live cast-count vs pending; "Coin Flip" button (visible only on tie); "Next Match" button after result
+- [x] `/player` namespace — `HOST_CALL_VOTE`: validate hostToken, emit `VOTE_OPEN` to room channels; `PLAYER_VOTE`: record vote, emit `PLAYER_VOTE` (colour only, no name) to room channels; detect all-voted → emit `VOTE_RESULT`; `HOST_COIN_FLIP`: random heads/tails, emit `COIN_FLIP`; `HOST_NEXT_MATCH`: advance match index, emit `MATCH_START` or `ROUND_END`
+- [x] `app/api/game/coin-flip/route.ts` — POST: validate hostToken, flip, return result; emit `COIN_FLIP` to room channels
+- [x] Round advance: on `ROUND_END` → run new draw + reassignment → emit `ROUND_START` + individual `ASSIGNMENT` events → host sees "Next Round" on Host Panel
 
 ---
 

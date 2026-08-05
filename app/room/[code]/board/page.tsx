@@ -4,6 +4,7 @@ import { LedBackground } from '@/components/shared/led-background'
 import { BoardLobbyScreen } from '@/components/board/lobby-screen'
 import { BoardPoolProgress } from '@/components/board/pool-progress'
 import { RoundStartScreen } from '@/components/board/round-start-screen'
+import { BoardMatchView } from '@/components/board/match-view'
 import { useBoardSocket } from '@/hooks/use-board-socket'
 import type { BracketSize } from '@/types/room.types'
 
@@ -18,6 +19,58 @@ export default function BoardPage() {
     (roomState.status === 'poolgen' || roomState.status === 'poolreview') && !roomState.poolReady
       ? false
       : roomState.poolReady && roomState.status !== 'active'
+
+  // Game over — hold at champion state until M7
+  if (roomState.gameOver) {
+    return (
+      <div className="h-screen flex flex-col items-center justify-center">
+        <LedBackground />
+        <div className="relative z-10 text-center px-8">
+          <p
+            style={{
+              fontSize: '0.72rem',
+              color: 'rgba(250,255,254,0.40)',
+              letterSpacing: '0.22em',
+              textTransform: 'uppercase',
+              marginBottom: 12,
+            }}
+          >
+            Champion
+          </p>
+          <h1
+            style={{
+              fontSize: '4rem',
+              fontWeight: 900,
+              color: '#fafffe',
+              letterSpacing: '-0.04em',
+              lineHeight: 1,
+            }}
+          >
+            {roomState.champion?.title ?? 'Game Over'}
+          </h1>
+          {roomState.champion?.contextLine && (
+            <p style={{ fontSize: '1rem', color: 'rgba(250,255,254,0.45)', marginTop: 12 }}>
+              {roomState.champion.contextLine}
+            </p>
+          )}
+        </div>
+      </div>
+    )
+  }
+
+  // Match in progress — show full-screen match view
+  if (roomState.status === 'active' && roomState.currentMatch) {
+    return (
+      <BoardMatchView
+        match={roomState.currentMatch}
+        votes={roomState.votes}
+        matchPhase={roomState.matchPhase}
+        voteResult={roomState.voteResult}
+        coinFlipResult={roomState.coinFlipResult}
+        players={roomState.players}
+      />
+    )
+  }
 
   return (
     <div className="h-screen flex flex-col">

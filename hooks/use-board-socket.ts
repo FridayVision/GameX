@@ -4,8 +4,10 @@ import { io, Socket } from 'socket.io-client'
 import type { PlayerPublicState } from '@/types/player.types'
 import type { Item } from '@/types/item.types'
 import type { RoomStatus, BracketSize } from '@/types/room.types'
+import type { MatchPublic as MatchPublicFull } from '@/types/match.types'
 import { EVENTS } from '@/lib/socket-events'
 
+// Minimal match shape for the round-level match list (used in RoundStartScreen)
 export interface MatchPublic {
   matchId: string
   matchIndex: number
@@ -33,6 +35,15 @@ export interface BoardRoomState {
   totalRounds: number | null
   roundMatches: MatchPublic[]
   confirmedPlayerIds: string[]
+  // Match loop state
+  currentMatch: MatchPublicFull | null
+  votes: Array<{ colour: string; side: 'A' | 'B' }>
+  matchPhase: MatchPublicFull['phase'] | null
+  voteResult: { side: 'A' | 'B' | 'tie'; winnerItem: Item | null } | null
+  coinFlipResult: { result: 'heads' | 'tails'; side: 'A' | 'B'; winnerItem: Item } | null
+  interRound: boolean
+  gameOver: boolean
+  champion: Item | null
 }
 
 export function useBoardSocket(roomCode: string | null) {
@@ -51,6 +62,14 @@ export function useBoardSocket(roomCode: string | null) {
     totalRounds: null,
     roundMatches: [],
     confirmedPlayerIds: [],
+    currentMatch: null,
+    votes: [],
+    matchPhase: null,
+    voteResult: null,
+    coinFlipResult: null,
+    interRound: false,
+    gameOver: false,
+    champion: null,
   })
 
   useEffect(() => {
@@ -60,12 +79,36 @@ export function useBoardSocket(roomCode: string | null) {
 
     socket.on('connect', () => setConnected(true))
     socket.on('disconnect', () => setConnected(false))
-    socket.on(
-      EVENTS.PLAYER_JOINED,
-      (data: Omit<BoardRoomState, 'poolProgress' | 'pool' | 'poolReady'>) => {
-        setRoomState((prev) => ({ ...prev, ...data }))
-      }
-    )
+
+    socket.on(EVENTS.PLAYER_JOINED, (data: Record<string, unknown>) => {
+      setRoomState((prev) => ({
+        ...prev,
+        players: (data.players as PlayerPublicState[]) ?? prev.players,
+        status: (data.status as RoomStatus) ?? prev.status,
+        bracketSize: (data.bracketSize as BracketSize) ?? prev.bracketSize,
+        roomCode: (data.roomCode as string) ?? prev.roomCode,
+        topic: (data.topic as string) ?? prev.topic,
+        roundIndex: 'roundIndex' in data ? (data.roundIndex as number) : prev.roundIndex,
+        totalRounds: 'totalRounds' in data ? (data.totalRounds as number) : prev.totalRounds,
+        roundMatches: (data.roundMatches as MatchPublic[]) ?? prev.roundMatches,
+        confirmedPlayerIds: (data.confirmedPlayerIds as string[]) ?? prev.confirmedPlayerIds,
+        // currentMatch and votes come from reconnect payload
+        currentMatch:
+          'currentMatch' in data
+            ? (data.currentMatch as MatchPublicFull | null)
+            : prev.currentMatch,
+        votes:
+          'currentVotes' in data
+            ? (data.currentVotes as Array<{ colour: string; side: 'A' | 'B' }>)
+            : prev.votes,
+        // Restore matchPhase from reconnected match
+        matchPhase:
+          'currentMatch' in data && data.currentMatch
+            ? ((data.currentMatch as MatchPublicFull).phase as MatchPublicFull['phase'])
+            : prev.matchPhase,
+      }))
+    })
+
     socket.on(EVENTS.PLAYER_LEFT, ({ playerId }: { playerId: string }) => {
       setRoomState((prev) => ({
         ...prev,
@@ -103,11 +146,55 @@ export function useBoardSocket(roomCode: string | null) {
           totalRounds: data.totalRounds,
           roundMatches: data.matches,
           confirmedPlayerIds: [],
+          currentMatch: null,
+          matchPhase: null,
+          votes: [],
+          voteResult: null,
+          coinFlipResult: null,
+          interRound: true,
         }))
       }
     )
     socket.on(EVENTS.ASSIGNMENT_CONFIRMED, (data: { confirmedPlayerIds: string[] }) => {
       setRoomState((prev) => ({ ...prev, confirmedPlayerIds: data.confirmedPlayerIds }))
+    })
+    socket.on(EVENTS.MATCH_START, (data: MatchPublicFull) => {
+      setRoomState((prev) => ({
+        ...prev,
+        currentMatch: data,
+        matchPhase: data.phase,
+        votes: [],
+        voteResult: null,
+        coinFlipResult: null,
+        interRound: false,
+      }))
+    })
+    socket.on(EVENTS.VOTE_OPEN, () => {
+      setRoomState((prev) => ({ ...prev, matchPhase: 'voting' }))
+    })
+    socket.on(EVENTS.PLAYER_VOTE, (data: { colour: string; side: 'A' | 'B' }) => {
+      setRoomState((prev) => ({ ...prev, votes: [...prev.votes, data] }))
+    })
+    socket.on(EVENTS.VOTE_RESULT, (data: { side: 'A' | 'B' | 'tie'; winnerItem: Item | null }) => {
+      setRoomState((prev) => ({
+        ...prev,
+        voteResult: data,
+        matchPhase: data.side === 'tie' ? 'tied' : 'result',
+      }))
+    })
+    socket.on(
+      EVENTS.COIN_FLIP,
+      (data: { result: 'heads' | 'tails'; side: 'A' | 'B'; winnerItem: Item }) => {
+        setRoomState((prev) => ({
+          ...prev,
+          coinFlipResult: data,
+          matchPhase: 'result',
+          voteResult: { side: data.side, winnerItem: data.winnerItem },
+        }))
+      }
+    )
+    socket.on(EVENTS.GAME_OVER, (data: { champion: Item }) => {
+      setRoomState((prev) => ({ ...prev, gameOver: true, champion: data.champion }))
     })
 
     return () => {

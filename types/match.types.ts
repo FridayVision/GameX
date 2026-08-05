@@ -9,6 +9,7 @@ export interface Match {
   votes: Record<string, 'A' | 'B'> // playerId → choice
   winner: 'A' | 'B' | null
   tiebroken: boolean
+  phase: 'pending' | 'debate' | 'voting' | 'result' | 'tied'
 }
 
 export interface MatchRecord {
@@ -18,4 +19,14 @@ export interface MatchRecord {
   itemBId: string
   winnerId: string
   tiebroken: boolean
+}
+
+export interface MatchPublic {
+  matchId: string
+  matchIndex: number
+  roundIndex: number
+  totalMatches: number
+  itemA: Item
+  itemB: Item
+  phase: 'pending' | 'debate' | 'voting' | 'result' | 'tied'
 }

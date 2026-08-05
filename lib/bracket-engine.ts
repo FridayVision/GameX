@@ -27,6 +27,7 @@ export function drawRound(survivingItems: Item[], roundIndex: number): Match[] {
       votes: {},
       winner: null,
       tiebroken: false,
+      phase: 'pending',
     })
   }
 
