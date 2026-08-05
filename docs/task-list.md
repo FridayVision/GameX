@@ -1,6 +1,6 @@
 # GameX — Dev Task List
 
-Generated: 2026-07-27 | Last updated: 2026-08-05 (M5 complete)
+Generated: 2026-07-27 | Last updated: 2026-08-05 (M5 complete + UX polish)
 Tech stack: Next.js 16 + Socket.IO 4 + TypeScript 6 + Tailwind 4
 Default config: 4 players, 16 items | Hosting: Railway (custom server)
 
