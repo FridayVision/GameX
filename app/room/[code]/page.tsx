@@ -29,17 +29,17 @@ export default function RoomPage() {
   const [startError, setStartError] = useState('')
 
   useEffect(() => {
-    const pt = sessionStorage.getItem(`playerToken_${code}`)
-    const pid = sessionStorage.getItem(`playerId_${code}`)
-    const rid = sessionStorage.getItem(`roomId_${code}`)
+    const pt = localStorage.getItem(`playerToken_${code}`)
+    const pid = localStorage.getItem(`playerId_${code}`)
+    const rid = localStorage.getItem(`roomId_${code}`)
 
     if (!pt || !pid || !rid) {
       router.replace(`/room/${code}/join`)
       return
     }
 
-    const ht = sessionStorage.getItem(`hostToken_${code}`)
-    const rc = sessionStorage.getItem(`reclaimCode_${code}`)
+    const ht = localStorage.getItem(`hostToken_${code}`)
+    const rc = localStorage.getItem(`reclaimCode_${code}`)
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setSession({
       playerToken: pt,
@@ -51,10 +51,30 @@ export default function RoomPage() {
     })
   }, [code, router])
 
-  const { roomState, confirmAssignment, castVote, callVote, coinFlip, nextMatch } = usePlayerSocket(
-    session?.roomId ?? null,
-    session?.playerToken ?? null
-  )
+  const {
+    roomState,
+    confirmAssignment,
+    castVote,
+    callVote,
+    coinFlip,
+    nextMatch,
+    proceedAnyway,
+    emitRoomReset,
+  } = usePlayerSocket(session?.roomId ?? null, session?.playerToken ?? null)
+
+  const handleEndGame = useCallback(() => {
+    // Notify board and players immediately before navigating (closing the socket)
+    emitRoomReset()
+    // Small delay so the socket event sends before the page navigates away
+    setTimeout(() => {
+      localStorage.removeItem(`playerToken_${code}`)
+      localStorage.removeItem(`playerId_${code}`)
+      localStorage.removeItem(`roomId_${code}`)
+      localStorage.removeItem(`hostToken_${code}`)
+      localStorage.removeItem(`reclaimCode_${code}`)
+      router.replace('/')
+    }, 150)
+  }, [code, router, emitRoomReset])
 
   const handleStart = useCallback(async () => {
     if (!session?.hostToken) return
@@ -93,6 +113,205 @@ export default function RoomPage() {
   const bracketSize = (roomState.bracketSize ?? 16) as BracketSize
   const gameActive = roomState.status === 'active'
 
+  // All players left — shown to host when they reconnect and find nobody waiting
+  if (roomState.allPlayersLeft && session.isHost) {
+    return (
+      <div className="h-[100dvh] flex flex-col items-center justify-center px-6 text-center gap-4">
+        <LedBackground />
+        <div
+          className="relative z-10 flex flex-col items-center gap-4 w-full max-w-[320px]"
+          style={{
+            padding: '28px 24px',
+            borderRadius: 20,
+            background: 'rgba(8,8,8,0.96)',
+            border: '1px solid rgba(250,255,254,0.10)',
+          }}
+        >
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+            <p
+              style={{
+                fontSize: '1.2rem',
+                fontWeight: 900,
+                color: '#fafffe',
+                letterSpacing: '-0.02em',
+              }}
+            >
+              Everyone left
+            </p>
+            <p style={{ fontSize: '0.72rem', color: 'rgba(250,255,254,0.40)', lineHeight: 1.5 }}>
+              You reconnected, but all players have already gone home.
+            </p>
+          </div>
+          <button
+            onClick={handleEndGame}
+            style={{
+              width: '100%',
+              height: 48,
+              borderRadius: 10,
+              border: '1px solid rgba(250,255,254,0.15)',
+              background: 'rgba(250,255,254,0.06)',
+              color: 'rgba(250,255,254,0.65)',
+              fontWeight: 700,
+              fontSize: '0.88rem',
+              cursor: 'pointer',
+            }}
+          >
+            Go Home
+          </button>
+        </div>
+      </div>
+    )
+  }
+
+  // Host ended game — non-host players see a "Game ended" screen
+  if (roomState.gameEnded && !session.isHost) {
+    return (
+      <div className="h-[100dvh] flex flex-col items-center justify-center px-6 text-center gap-4">
+        <LedBackground />
+        <div
+          className="relative z-10 flex flex-col items-center gap-4 w-full max-w-[320px]"
+          style={{
+            padding: '28px 24px',
+            borderRadius: 20,
+            background: 'rgba(8,8,8,0.96)',
+            border: '1px solid rgba(250,255,254,0.10)',
+          }}
+        >
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+            <p
+              style={{
+                fontSize: '1.2rem',
+                fontWeight: 900,
+                color: '#fafffe',
+                letterSpacing: '-0.02em',
+              }}
+            >
+              Game ended
+            </p>
+            <p style={{ fontSize: '0.72rem', color: 'rgba(250,255,254,0.40)', lineHeight: 1.5 }}>
+              The host ended the game.
+            </p>
+          </div>
+          <button
+            onClick={() => router.replace('/')}
+            style={{
+              width: '100%',
+              height: 48,
+              borderRadius: 10,
+              border: '1px solid rgba(250,255,254,0.15)',
+              background: 'rgba(250,255,254,0.06)',
+              color: 'rgba(250,255,254,0.65)',
+              fontWeight: 700,
+              fontSize: '0.88rem',
+              cursor: 'pointer',
+            }}
+          >
+            Go Home
+          </button>
+        </div>
+      </div>
+    )
+  }
+
+  // Removed from game
+  if (roomState.removedFromGame) {
+    return (
+      <div className="h-[100dvh] flex flex-col items-center justify-center px-6 text-center gap-4">
+        <LedBackground />
+        <div
+          className="relative z-10 flex flex-col items-center gap-4 w-full max-w-[320px]"
+          style={{
+            padding: '28px 24px',
+            borderRadius: 20,
+            background: 'rgba(8,8,8,0.96)',
+            border: '1px solid rgba(250,255,254,0.10)',
+          }}
+        >
+          <div
+            style={{
+              width: 48,
+              height: 48,
+              borderRadius: '50%',
+              background: 'rgba(236,88,56,0.12)',
+              border: '1.5px solid rgba(236,88,56,0.35)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: '1.4rem',
+            }}
+          >
+            ✕
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+            <p
+              style={{
+                fontSize: '1.2rem',
+                fontWeight: 900,
+                color: '#fafffe',
+                letterSpacing: '-0.02em',
+              }}
+            >
+              You&apos;ve been removed
+            </p>
+            <p style={{ fontSize: '0.72rem', color: 'rgba(250,255,254,0.40)', lineHeight: 1.5 }}>
+              The host removed you from the game after you disconnected.
+            </p>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  // Host abandoned — game is over
+  if (roomState.hostAbandoned) {
+    return (
+      <div className="h-[100dvh] flex flex-col items-center justify-center px-6 text-center gap-4">
+        <LedBackground />
+        <div
+          className="relative z-10 flex flex-col items-center gap-4 w-full max-w-[320px]"
+          style={{
+            padding: '28px 24px',
+            borderRadius: 20,
+            background: 'rgba(8,8,8,0.96)',
+            border: '1px solid rgba(250,255,254,0.10)',
+          }}
+        >
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+            <p
+              style={{
+                fontSize: '1.2rem',
+                fontWeight: 900,
+                color: '#fafffe',
+                letterSpacing: '-0.02em',
+              }}
+            >
+              Host didn&apos;t reconnect
+            </p>
+            <p style={{ fontSize: '0.72rem', color: 'rgba(250,255,254,0.40)', lineHeight: 1.5 }}>
+              The host left and didn&apos;t come back. The game has ended.
+            </p>
+          </div>
+          <button
+            onClick={() => router.replace('/')}
+            style={{
+              width: '100%',
+              height: 48,
+              borderRadius: 10,
+              border: '1px solid rgba(250,255,254,0.15)',
+              background: 'rgba(250,255,254,0.06)',
+              color: 'rgba(250,255,254,0.65)',
+              fontWeight: 700,
+              fontSize: '0.88rem',
+              cursor: 'pointer',
+            }}
+          >
+            Go Home
+          </button>
+        </div>
+      </div>
+    )
+  }
+
   // Game over — hold at current view until M7 champion screen
   if (roomState.gameOver) {
     return (
@@ -130,15 +349,53 @@ export default function RoomPage() {
 
   // Match in progress — show PlayerMatchView (+ HostMatchControls overlay for host)
   if (gameActive && roomState.currentMatch) {
-    const activePlayers = roomState.players.filter(
-      (p) => p.status !== 'removed' && p.status !== 'timedout'
-    )
+    const activePlayers = roomState.players.filter((p) => p.status !== 'removed')
     const votedCount = roomState.votes.length
     const totalCount = activePlayers.length
 
     return (
       <div className="h-[100dvh]">
         <LedBackground />
+        {/* Game paused banner — shown to non-host players when host disconnects */}
+        {roomState.gamePaused && !session.isHost && (
+          <div
+            style={{
+              position: 'fixed',
+              top: 0,
+              left: 0,
+              right: 0,
+              zIndex: 30,
+              padding: '10px 16px',
+              background: 'rgba(8,8,8,0.96)',
+              borderBottom: '1px solid rgba(250,255,254,0.08)',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 10,
+            }}
+          >
+            <span
+              className="anim-waiting-dot"
+              style={{
+                display: 'inline-block',
+                width: 6,
+                height: 6,
+                borderRadius: '50%',
+                background: '#f59e0b',
+                flexShrink: 0,
+              }}
+            />
+            <span
+              style={{
+                fontSize: '0.72rem',
+                fontWeight: 600,
+                color: 'rgba(250,255,254,0.65)',
+                letterSpacing: '0.04em',
+              }}
+            >
+              Host disconnected — game paused
+            </span>
+          </div>
+        )}
         <PlayerMatchView
           match={roomState.currentMatch}
           votes={roomState.votes}
@@ -149,7 +406,8 @@ export default function RoomPage() {
           playerColour={mePlayer?.colour ?? '#15F4C7'}
           playerName={mePlayer?.displayName ?? session.playerId}
           isHost={session.isHost}
-          castVote={castVote}
+          castVote={roomState.gamePaused ? () => {} : castVote}
+          gamePaused={roomState.gamePaused}
         />
         {session.isHost && (
           <HostMatchControls
@@ -159,9 +417,12 @@ export default function RoomPage() {
             totalCount={totalCount}
             confirmedCount={roomState.confirmedPlayerIds.length}
             playerCount={totalCount}
+            timedOutPlayers={roomState.timedOutPlayers}
             onCallVote={callVote}
             onCoinFlip={coinFlip}
             onNextMatch={nextMatch}
+            onProceedAnyway={proceedAnyway}
+            onEndGame={handleEndGame}
           />
         )}
       </div>
@@ -187,13 +448,13 @@ export default function RoomPage() {
             votedCount={0}
             totalCount={0}
             confirmedCount={roomState.confirmedPlayerIds.length}
-            playerCount={
-              roomState.players.filter((p) => p.status !== 'removed' && p.status !== 'timedout')
-                .length
-            }
+            playerCount={roomState.players.filter((p) => p.status === 'connected').length}
+            timedOutPlayers={roomState.timedOutPlayers}
             onCallVote={callVote}
             onCoinFlip={coinFlip}
             onNextMatch={nextMatch}
+            onProceedAnyway={proceedAnyway}
+            onEndGame={handleEndGame}
           />
         )}
       </div>

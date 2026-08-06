@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server'
 import { getRoomByCode, updateRoom } from '@/lib/room-store'
 import { generateToken } from '@/lib/auth'
 import { EVENTS } from '@/lib/socket-events'
-import { getIO } from '@/lib/socket-server'
+import { getIO, clearGraceTimer } from '@/lib/socket-server'
 
 export async function POST(request: Request) {
   let body: unknown
@@ -35,11 +35,16 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Host player record not found' }, { status: 500 })
   }
 
-  // Notify clients — full host reconnect logic handled in M6
+  // Clear host grace timer and notify clients of reconnect
+  clearGraceTimer(`${room.roomId}:${hostPlayer.playerId}`)
   try {
     const io = getIO()
-    io.of('/board').to(room.roomId).emit(EVENTS.HOST_DISCONNECTED, { reconnected: true })
-    io.of('/player').to(room.roomId).emit(EVENTS.HOST_DISCONNECTED, { reconnected: true })
+    io.of('/board')
+      .to(room.roomId)
+      .emit(EVENTS.HOST_RECONNECTED, { hostName: hostPlayer.displayName })
+    io.of('/player')
+      .to(room.roomId)
+      .emit(EVENTS.HOST_RECONNECTED, { hostName: hostPlayer.displayName })
   } catch {
     // Non-fatal
   }

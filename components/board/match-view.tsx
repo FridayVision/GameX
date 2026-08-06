@@ -206,7 +206,7 @@ export function BoardMatchView({
   const votesA = votes.filter((v) => v.side === 'A')
   const votesB = votes.filter((v) => v.side === 'B')
   const votedColours = new Set(votes.map((v) => v.colour))
-  const activePlayers = players.filter((p) => p.status !== 'removed' && p.status !== 'timedout')
+  const activePlayers = players.filter((p) => p.status !== 'removed')
 
   const phaseLabel =
     effectivePhase === 'debate'
@@ -222,19 +222,19 @@ export function BoardMatchView({
   const phasePillStyle: React.CSSProperties =
     effectivePhase === 'tied'
       ? {
-          background: 'rgba(245,158,11,0.15)',
-          border: '1px solid rgba(245,158,11,0.4)',
+          background: 'rgba(8,8,8,0.94)',
+          border: '1.5px solid rgba(245,158,11,0.55)',
           color: '#f59e0b',
         }
       : effectivePhase === 'result'
         ? {
-            background: 'rgba(34,197,94,0.15)',
-            border: '1px solid rgba(34,197,94,0.4)',
+            background: 'rgba(8,8,8,0.94)',
+            border: '1.5px solid rgba(34,197,94,0.55)',
             color: '#22c55e',
           }
         : {
-            background: 'rgba(236,88,56,0.15)',
-            border: '1px solid rgba(236,88,56,0.4)',
+            background: 'rgba(8,8,8,0.94)',
+            border: '1.5px solid rgba(236,88,56,0.55)',
             color: '#ec5838',
           }
 
@@ -272,7 +272,11 @@ export function BoardMatchView({
             fontWeight: 600,
             letterSpacing: '0.14em',
             textTransform: 'uppercase',
-            color: 'rgba(250,255,254,0.55)',
+            color: 'rgba(250,255,254,0.72)',
+            background: 'rgba(8,8,8,0.94)',
+            border: '1px solid rgba(250,255,254,0.10)',
+            padding: '5px 14px',
+            borderRadius: 6,
           }}
         >
           ROUND {match.roundIndex + 1} · MATCH {match.matchIndex + 1} OF {match.totalMatches}
@@ -457,10 +461,23 @@ export function BoardMatchView({
       >
         {activePlayers.map((player) => {
           const hasVoted = votedColours.has(player.colour)
+          const isGrace = player.status === 'grace'
+          const isTimedOut = player.status === 'timedout'
+          const isDisconnected = isGrace || isTimedOut
+
           return (
             <div
               key={player.playerId}
-              className={hasVoted ? '' : 'anim-ring-pulse'}
+              title={
+                isGrace
+                  ? `${player.displayName} — disconnected`
+                  : isTimedOut
+                    ? `${player.displayName} — timed out`
+                    : undefined
+              }
+              className={
+                !isDisconnected && hasVoted ? '' : !isDisconnected ? 'anim-ring-pulse' : ''
+              }
               style={{
                 width: 28,
                 height: 28,
@@ -469,20 +486,32 @@ export function BoardMatchView({
                 alignItems: 'center',
                 justifyContent: 'center',
                 transition: 'background 0.4s ease, border-color 0.4s ease, opacity 0.4s ease',
-                ...(hasVoted
+                ...(isTimedOut
                   ? {
-                      background: player.colour,
-                      boxShadow: `0 0 10px ${toRgba(player.colour, 0.4)}`,
-                      border: '2px solid transparent',
-                    }
-                  : {
                       background: 'transparent',
-                      border: `2px solid ${player.colour}`,
-                      opacity: 0.4,
-                    }),
+                      border: '2px dashed rgba(250,255,254,0.22)',
+                      opacity: 0.3,
+                    }
+                  : isGrace
+                    ? {
+                        background: 'transparent',
+                        border: '2px solid rgba(250,255,254,0.28)',
+                        opacity: 0.4,
+                      }
+                    : hasVoted
+                      ? {
+                          background: player.colour,
+                          boxShadow: `0 0 10px ${toRgba(player.colour, 0.4)}`,
+                          border: '2px solid transparent',
+                        }
+                      : {
+                          background: 'transparent',
+                          border: `2px solid ${player.colour}`,
+                          opacity: 0.4,
+                        }),
               }}
             >
-              {hasVoted && (
+              {!isDisconnected && hasVoted && (
                 <span style={{ fontSize: 12, fontWeight: 900, color: 'rgba(0,0,0,0.5)' }}>✓</span>
               )}
             </div>

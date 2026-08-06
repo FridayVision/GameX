@@ -14,6 +14,7 @@ interface PlayerMatchViewProps {
   playerColour: string
   playerName: string
   isHost?: boolean
+  gamePaused?: boolean
   castVote: (side: 'A' | 'B') => void
 }
 
@@ -59,10 +60,8 @@ function CompactCard({
         background: '#111111',
         border: cardBorder,
         boxShadow: cardShadow,
-        opacity: isLoser ? 0.3 : 1,
         filter: isLoser ? 'grayscale(100%)' : 'none',
-        transition:
-          'opacity 0.6s ease, filter 0.6s ease, border-color 0.4s ease, box-shadow 0.4s ease',
+        transition: 'filter 0.6s ease, border-color 0.4s ease, box-shadow 0.4s ease',
         flexShrink: 0,
       }}
     >
@@ -86,7 +85,7 @@ function CompactCard({
               position: 'absolute',
               inset: 0,
               background:
-                'linear-gradient(to bottom, transparent 35%, rgba(0,0,0,0.65) 60%, rgba(0,0,0,0.95) 100%)',
+                'linear-gradient(to bottom, transparent 20%, rgba(0,0,0,0.55) 50%, rgba(0,0,0,0.92) 72%, rgba(0,0,0,0.98) 100%)',
             }}
           />
         </>
@@ -96,6 +95,28 @@ function CompactCard({
             position: 'absolute',
             inset: 0,
             background: `linear-gradient(160deg, rgba(236,88,56,0.10) 0%, #111111 60%)`,
+          }}
+        />
+      )}
+      {/* Loser: solid dark dim overlay — no transparency so LED grid doesn't bleed through */}
+      {isLoser && (
+        <div
+          style={{
+            position: 'absolute',
+            inset: 0,
+            background: 'rgba(6,6,6,0.62)',
+            zIndex: 5,
+          }}
+        />
+      )}
+      {/* Winner: solid green overlay */}
+      {isWinner && (
+        <div
+          style={{
+            position: 'absolute',
+            inset: 0,
+            background: 'rgba(10,38,20,0.72)',
+            zIndex: 5,
           }}
         />
       )}
@@ -148,6 +169,7 @@ export function PlayerMatchView({
   playerColour,
   playerName,
   isHost = false,
+  gamePaused = false,
   castVote,
 }: PlayerMatchViewProps) {
   const [revealedResult, setRevealedResult] = useState<typeof voteResult>(null)
@@ -448,11 +470,16 @@ export function PlayerMatchView({
                 letterSpacing: '0.05em',
               }}
             >
-              {votes.length > 0 ? `${votes.length} voted · cast yours` : 'Cast your vote'}
+              {gamePaused
+                ? 'Game paused'
+                : votes.length > 0
+                  ? `${votes.length} voted · cast yours`
+                  : 'Cast your vote'}
             </p>
             <div style={{ display: 'flex', gap: 10 }}>
               <button
-                onClick={() => castVote('A')}
+                onClick={gamePaused ? undefined : () => castVote('A')}
+                disabled={gamePaused}
                 style={{
                   flex: 1,
                   height: 52,
@@ -462,16 +489,18 @@ export function PlayerMatchView({
                   color: '#fafffe',
                   fontWeight: 900,
                   fontSize: '0.86rem',
-                  cursor: 'pointer',
+                  cursor: gamePaused ? 'not-allowed' : 'pointer',
                   lineHeight: 1.25,
                   padding: '0 8px',
                   transition: 'all .15s',
+                  opacity: gamePaused ? 0.35 : 1,
                 }}
               >
                 {match.itemA.title}
               </button>
               <button
-                onClick={() => castVote('B')}
+                onClick={gamePaused ? undefined : () => castVote('B')}
+                disabled={gamePaused}
                 style={{
                   flex: 1,
                   height: 52,
@@ -481,10 +510,11 @@ export function PlayerMatchView({
                   color: '#fafffe',
                   fontWeight: 900,
                   fontSize: '0.86rem',
-                  cursor: 'pointer',
+                  cursor: gamePaused ? 'not-allowed' : 'pointer',
                   lineHeight: 1.25,
                   padding: '0 8px',
                   transition: 'all .15s',
+                  opacity: gamePaused ? 0.35 : 1,
                 }}
               >
                 {match.itemB.title}
@@ -581,8 +611,8 @@ export function PlayerMatchView({
               textAlign: 'center',
               padding: '12px 20px',
               borderRadius: 12,
-              background: 'rgba(34,197,94,0.10)',
-              border: '1px solid rgba(34,197,94,0.3)',
+              background: 'rgba(10,28,16,0.96)',
+              border: '1px solid rgba(34,197,94,0.35)',
             }}
           >
             <p

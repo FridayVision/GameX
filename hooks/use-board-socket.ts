@@ -44,6 +44,9 @@ export interface BoardRoomState {
   interRound: boolean
   gameOver: boolean
   champion: Item | null
+  gamePaused: boolean
+  hostAbandoned: boolean
+  roomReset: boolean
 }
 
 export function useBoardSocket(roomCode: string | null) {
@@ -70,6 +73,9 @@ export function useBoardSocket(roomCode: string | null) {
     interRound: false,
     gameOver: false,
     champion: null,
+    gamePaused: false,
+    hostAbandoned: false,
+    roomReset: false,
   })
 
   useEffect(() => {
@@ -92,6 +98,7 @@ export function useBoardSocket(roomCode: string | null) {
         totalRounds: 'totalRounds' in data ? (data.totalRounds as number) : prev.totalRounds,
         roundMatches: (data.roundMatches as MatchPublic[]) ?? prev.roundMatches,
         confirmedPlayerIds: (data.confirmedPlayerIds as string[]) ?? prev.confirmedPlayerIds,
+        gamePaused: 'gamePaused' in data ? (data.gamePaused as boolean) : prev.gamePaused,
         // currentMatch and votes come from reconnect payload
         currentMatch:
           'currentMatch' in data
@@ -109,11 +116,41 @@ export function useBoardSocket(roomCode: string | null) {
       }))
     })
 
-    socket.on(EVENTS.PLAYER_LEFT, ({ playerId }: { playerId: string }) => {
+    socket.on(EVENTS.PLAYER_LEFT, ({ playerId, status }: { playerId: string; status?: string }) => {
+      setRoomState((prev) => ({
+        ...prev,
+        players: prev.players.map((p) =>
+          p.playerId === playerId
+            ? { ...p, status: (status ?? 'grace') as PlayerPublicState['status'] }
+            : p
+        ),
+      }))
+    })
+    socket.on(EVENTS.PLAYER_RECONNECT, ({ playerId }: { playerId: string }) => {
+      setRoomState((prev) => ({
+        ...prev,
+        players: prev.players.map((p) =>
+          p.playerId === playerId ? { ...p, status: 'connected' as const } : p
+        ),
+      }))
+    })
+    socket.on(EVENTS.PLAYER_REMOVED, ({ playerId }: { playerId: string }) => {
       setRoomState((prev) => ({
         ...prev,
         players: prev.players.filter((p) => p.playerId !== playerId),
       }))
+    })
+    socket.on(EVENTS.HOST_DISCONNECTED, () => {
+      setRoomState((prev) => ({ ...prev, gamePaused: true }))
+    })
+    socket.on(EVENTS.HOST_RECONNECTED, () => {
+      setRoomState((prev) => ({ ...prev, gamePaused: false, hostAbandoned: false }))
+    })
+    socket.on(EVENTS.HOST_ABANDONED, () => {
+      setRoomState((prev) => ({ ...prev, hostAbandoned: true }))
+    })
+    socket.on(EVENTS.ROOM_RESET, () => {
+      setRoomState((prev) => ({ ...prev, roomReset: true }))
     })
     socket.on(
       EVENTS.POOL_PROGRESS,

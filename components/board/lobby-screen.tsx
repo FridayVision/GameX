@@ -175,10 +175,22 @@ export function BoardLobbyScreen({ roomCode, bracketSize, players, topic }: Boar
 
       {/* Bottom instruction */}
       <div className="relative z-10 text-center pb-7">
-        <p className="text-[rgba(255,255,255,0.16)] text-[0.58rem] tracking-wide">
-          Open <span className="text-[rgba(255,255,255,0.36)] font-bold">GameX</span> on your phone
-          &nbsp;·&nbsp; Enter the code above &nbsp;·&nbsp; Pick a colour and join
-        </p>
+        <div
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 6,
+            padding: '8px 18px',
+            borderRadius: 20,
+            background: 'rgba(8,8,8,0.96)',
+            border: '1px solid rgba(250,255,254,0.10)',
+          }}
+        >
+          <p className="text-[rgba(255,255,255,0.45)] text-[0.58rem] tracking-wide">
+            Open <span className="text-[rgba(255,255,255,0.72)] font-bold">GameX</span> on your
+            phone &nbsp;·&nbsp; Enter the code above &nbsp;·&nbsp; Pick a colour and join
+          </p>
+        </div>
       </div>
     </>
   )

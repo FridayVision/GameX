@@ -20,6 +20,7 @@ export function AssignmentCard({
   onReady,
 }: AssignmentCardProps) {
   const [isFlipped, setIsFlipped] = useState(false)
+  const [backVisible, setBackVisible] = useState(true)
   const [isReady, setIsReady] = useState(false)
 
   const holdStartRef = useRef<number | null>(null)
@@ -69,6 +70,13 @@ export function AssignmentCard({
   }, [isFlipped, stopHold])
 
   useEffect(() => () => stopHold(), [stopHold])
+
+  // Hide back face at flip midpoint — Safari ignores backface-visibility so we do it via JS
+  useEffect(() => {
+    if (!isFlipped) return
+    const t = setTimeout(() => setBackVisible(false), 300)
+    return () => clearTimeout(t)
+  }, [isFlipped])
 
   const goReady = useCallback(() => {
     if (!isFlipped) return
@@ -194,6 +202,9 @@ export function AssignmentCard({
                   flexDirection: 'column',
                   alignItems: 'center',
                   justifyContent: 'center',
+                  // Safari ignores backface-visibility — hide explicitly at flip midpoint
+                  opacity: backVisible ? 1 : 0,
+                  pointerEvents: backVisible ? 'auto' : 'none',
                 } as React.CSSProperties
               }
             >

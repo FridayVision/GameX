@@ -15,6 +15,12 @@ export interface PoolSourceProgress {
   error?: string
 }
 
+export interface TimedOutPlayer {
+  playerId: string
+  displayName: string
+  colour: string
+}
+
 export interface PlayerRoomState {
   players: PlayerPublicState[]
   status: RoomStatus
@@ -40,6 +46,13 @@ export interface PlayerRoomState {
   interRound: boolean
   gameOver: boolean
   champion: Item | null
+  // Disconnection / reconnection
+  gamePaused: boolean
+  timedOutPlayers: TimedOutPlayer[]
+  removedFromGame: boolean
+  hostAbandoned: boolean
+  allPlayersLeft: boolean
+  gameEnded: boolean
 }
 
 export function usePlayerSocket(roomId: string | null, playerToken: string | null) {
@@ -70,6 +83,12 @@ export function usePlayerSocket(roomId: string | null, playerToken: string | nul
     interRound: false,
     gameOver: false,
     champion: null,
+    gamePaused: false,
+    timedOutPlayers: [],
+    removedFromGame: false,
+    hostAbandoned: false,
+    allPlayersLeft: false,
+    gameEnded: false,
   })
 
   useEffect(() => {
@@ -83,14 +102,65 @@ export function usePlayerSocket(roomId: string | null, playerToken: string | nul
     socket.on(
       EVENTS.PLAYER_JOINED,
       (data: Omit<PlayerRoomState, 'poolProgress' | 'pool' | 'poolReady'>) => {
-        setRoomState((prev) => ({ ...prev, ...data }))
+        setRoomState((prev) => ({
+          ...prev,
+          ...data,
+          gamePaused: (data as { gamePaused?: boolean }).gamePaused ?? prev.gamePaused,
+        }))
       }
     )
-    socket.on(EVENTS.PLAYER_LEFT, ({ playerId }: { playerId: string }) => {
+    socket.on(EVENTS.PLAYER_LEFT, ({ playerId, status }: { playerId: string; status?: string }) => {
+      setRoomState((prev) => ({
+        ...prev,
+        players: prev.players.map((p) =>
+          p.playerId === playerId
+            ? { ...p, status: (status ?? 'grace') as PlayerPublicState['status'] }
+            : p
+        ),
+      }))
+    })
+    socket.on(EVENTS.PLAYER_RECONNECT, ({ playerId }: { playerId: string }) => {
+      setRoomState((prev) => ({
+        ...prev,
+        players: prev.players.map((p) =>
+          p.playerId === playerId ? { ...p, status: 'connected' as const } : p
+        ),
+        // Clear the timed-out notification if the player came back
+        timedOutPlayers: prev.timedOutPlayers.filter((p) => p.playerId !== playerId),
+      }))
+    })
+    socket.on(EVENTS.PLAYER_REMOVED, ({ playerId }: { playerId: string }) => {
       setRoomState((prev) => ({
         ...prev,
         players: prev.players.filter((p) => p.playerId !== playerId),
       }))
+    })
+    socket.on(EVENTS.PLAYER_TIMEOUT, (data: TimedOutPlayer) => {
+      setRoomState((prev) => ({
+        ...prev,
+        // Deduplicate — same player can timeout twice if they reconnect then disconnect again
+        timedOutPlayers: prev.timedOutPlayers.some((p) => p.playerId === data.playerId)
+          ? prev.timedOutPlayers
+          : [...prev.timedOutPlayers, data],
+      }))
+    })
+    socket.on(EVENTS.HOST_DISCONNECTED, () => {
+      setRoomState((prev) => ({ ...prev, gamePaused: true }))
+    })
+    socket.on(EVENTS.HOST_RECONNECTED, () => {
+      setRoomState((prev) => ({ ...prev, gamePaused: false, hostAbandoned: false }))
+    })
+    socket.on(EVENTS.ALL_PLAYERS_LEFT, () => {
+      setRoomState((prev) => ({ ...prev, allPlayersLeft: true }))
+    })
+    socket.on(EVENTS.REMOVED_FROM_GAME, () => {
+      setRoomState((prev) => ({ ...prev, removedFromGame: true }))
+    })
+    socket.on(EVENTS.HOST_ABANDONED, () => {
+      setRoomState((prev) => ({ ...prev, hostAbandoned: true }))
+    })
+    socket.on(EVENTS.ROOM_RESET, () => {
+      setRoomState((prev) => ({ ...prev, gameEnded: true }))
     })
     socket.on(
       EVENTS.POOL_PROGRESS,
@@ -225,5 +295,27 @@ export function usePlayerSocket(roomId: string | null, playerToken: string | nul
     socketRef.current?.emit(EVENTS.HOST_NEXT_MATCH)
   }, [])
 
-  return { connected, roomState, confirmAssignment, castVote, callVote, coinFlip, nextMatch }
+  const proceedAnyway = useCallback((targetPlayerId: string) => {
+    socketRef.current?.emit(EVENTS.HOST_PROCEED_ANYWAY, { playerId: targetPlayerId })
+    setRoomState((prev) => ({
+      ...prev,
+      timedOutPlayers: prev.timedOutPlayers.filter((p) => p.playerId !== targetPlayerId),
+    }))
+  }, [])
+
+  const emitRoomReset = useCallback(() => {
+    socketRef.current?.emit(EVENTS.ROOM_RESET)
+  }, [])
+
+  return {
+    connected,
+    roomState,
+    confirmAssignment,
+    castVote,
+    callVote,
+    coinFlip,
+    nextMatch,
+    proceedAnyway,
+    emitRoomReset,
+  }
 }

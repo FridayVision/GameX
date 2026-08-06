@@ -71,11 +71,11 @@ export default function HostSetupPage() {
       const { playerId, playerToken: pt } = await joinRes.json()
 
       // Store tokens immediately (so refresh can reclaim)
-      sessionStorage.setItem(`hostToken_${code}`, ht)
-      sessionStorage.setItem(`reclaimCode_${code}`, reclaimCode)
-      sessionStorage.setItem(`playerToken_${code}`, pt)
-      sessionStorage.setItem(`playerId_${code}`, playerId)
-      sessionStorage.setItem(`roomId_${code}`, rid)
+      localStorage.setItem(`hostToken_${code}`, ht)
+      localStorage.setItem(`reclaimCode_${code}`, reclaimCode)
+      localStorage.setItem(`playerToken_${code}`, pt)
+      localStorage.setItem(`playerId_${code}`, playerId)
+      localStorage.setItem(`roomId_${code}`, rid)
 
       // Update state — this triggers usePlayerSocket to connect
       setRoomCode(code)

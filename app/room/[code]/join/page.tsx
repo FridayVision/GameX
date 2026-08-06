@@ -52,9 +52,9 @@ export default function JoinPage() {
         return
       }
       const { playerId, playerToken } = data
-      sessionStorage.setItem(`playerToken_${code}`, playerToken)
-      sessionStorage.setItem(`playerId_${code}`, playerId)
-      sessionStorage.setItem(`roomId_${code}`, roomInfo.roomId)
+      localStorage.setItem(`playerToken_${code}`, playerToken)
+      localStorage.setItem(`playerId_${code}`, playerId)
+      localStorage.setItem(`roomId_${code}`, roomInfo.roomId)
       router.push(`/room/${code}`)
     } catch {
       setError('Network error — please try again')
@@ -78,10 +78,10 @@ export default function JoinPage() {
         return
       }
       const { hostToken, playerToken, playerId, roomId } = data
-      sessionStorage.setItem(`hostToken_${code}`, hostToken)
-      sessionStorage.setItem(`playerToken_${code}`, playerToken)
-      sessionStorage.setItem(`playerId_${code}`, playerId)
-      sessionStorage.setItem(`roomId_${code}`, roomId)
+      localStorage.setItem(`hostToken_${code}`, hostToken)
+      localStorage.setItem(`playerToken_${code}`, playerToken)
+      localStorage.setItem(`playerId_${code}`, playerId)
+      localStorage.setItem(`roomId_${code}`, roomId)
       router.push(`/room/${code}`)
     } catch {
       setError('Network error — please try again')

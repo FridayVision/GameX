@@ -12,6 +12,24 @@ import type { RoomState } from '@/types/room.types'
 // global._socketIO was tried but Next.js webpack bundles shadow the Node.js `global` object.
 type ProcessWithIO = NodeJS.Process & { __socketIO?: Server }
 
+// Grace period timers for disconnected players. Key: `${roomId}:${playerId}`
+const graceTimers = new Map<string, NodeJS.Timeout>()
+
+export function clearGraceTimer(key: string): void {
+  const t = graceTimers.get(key)
+  if (t) {
+    clearTimeout(t)
+    graceTimers.delete(key)
+  }
+}
+
+function isGamePaused(roomId: string): boolean {
+  const room = getRoom(roomId)
+  if (!room) return false
+  const host = [...room.players.values()].find((p) => p.isHost)
+  return host?.status === 'grace' || host?.status === 'timedout'
+}
+
 export function getIO(): Server {
   const io = (process as ProcessWithIO).__socketIO
   if (!io) throw new Error('Socket.IO not initialized')
@@ -124,9 +142,27 @@ export function initSocketServer(httpServer: HTTPServer): void {
       return
     }
 
+    // Removed players are permanently excluded — tell them, then drop
+    if (playerState.status === 'removed') {
+      socket.emit(EVENTS.REMOVED_FROM_GAME)
+      socket.disconnect(true)
+      return
+    }
+
+    // Detect if this is a reconnect from grace/timedout state
+    const prevStatus = playerState.status
+    const wasGrace =
+      prevStatus === 'grace' || prevStatus === 'timedout' || playerState.socketId !== null
+
+    // Clear any active grace timer
+    const timerKey = `${roomId}:${playerState.playerId}`
+    clearGraceTimer(timerKey)
+
     playerState.socketId = socket.id
     playerState.status = 'connected'
     socket.join(roomId)
+
+    const gamePaused = isGamePaused(roomId)
 
     const playerListPayload = {
       players: [...room.players.values()].map(toPublicState),
@@ -134,6 +170,7 @@ export function initSocketServer(httpServer: HTTPServer): void {
       bracketSize: room.bracketSize,
       roomCode: room.roomCode,
       topic: room.topic,
+      gamePaused,
     }
     // Send full player list to the connecting socket (include confirmedPlayerIds for host)
     socket.emit(EVENTS.PLAYER_JOINED, {
@@ -144,23 +181,50 @@ export function initSocketServer(httpServer: HTTPServer): void {
         confirmedPlayerIds: getConfirmedPlayerIds(roomId),
       }),
     })
-    // Broadcast reconnection to everyone else so their lists stay in sync
-    socket.to(roomId).emit(EVENTS.PLAYER_JOINED, playerListPayload)
-    board.to(roomId).emit(EVENTS.PLAYER_JOINED, {
-      ...playerListPayload,
-      // Include round state so board stays in sync on player reconnect
-      ...(room.status === 'active' && {
-        roundIndex: room.currentRound,
-        totalRounds: Math.log2(room.bracketSize),
-        roundMatches: room.currentMatches.map((m) => ({
-          matchId: m.matchId,
-          matchIndex: m.matchIndex,
-          itemA: m.itemA,
-          itemB: m.itemB,
-        })),
-        confirmedPlayerIds: getConfirmedPlayerIds(roomId),
-      }),
-    })
+
+    // If reconnecting after grace, emit PLAYER_RECONNECT to room
+    if (wasGrace) {
+      const reconnectPayload = {
+        playerId: playerState.playerId,
+        colour: playerState.colour,
+        status: 'connected' as const,
+      }
+      socket.to(roomId).emit(EVENTS.PLAYER_RECONNECT, reconnectPayload)
+      board.to(roomId).emit(EVENTS.PLAYER_RECONNECT, reconnectPayload)
+      if (playerState.isHost) {
+        // Check if any non-host players are still connected
+        const activePlayers = [...room.players.values()].filter(
+          (p) => !p.isHost && (p.status === 'connected' || p.status === 'grace')
+        )
+        if (activePlayers.length > 0) {
+          // Players still waiting — resume game
+          board.to(roomId).emit(EVENTS.HOST_RECONNECTED, { hostName: playerState.displayName })
+          player.to(roomId).emit(EVENTS.HOST_RECONNECTED, { hostName: playerState.displayName })
+        } else if (prevStatus === 'timedout') {
+          // Host genuinely timed out (60s elapsed) and all players have left
+          socket.emit(EVENTS.ALL_PLAYERS_LEFT)
+        }
+        // If prevStatus === 'grace' (reconnected quickly, e.g. dev HMR), don't treat as abandoned
+      }
+    } else {
+      // Fresh connection — broadcast player list update so others stay in sync
+      socket.to(roomId).emit(EVENTS.PLAYER_JOINED, playerListPayload)
+      board.to(roomId).emit(EVENTS.PLAYER_JOINED, {
+        ...playerListPayload,
+        // Include round state so board stays in sync on player reconnect
+        ...(room.status === 'active' && {
+          roundIndex: room.currentRound,
+          totalRounds: Math.log2(room.bracketSize),
+          roundMatches: room.currentMatches.map((m) => ({
+            matchId: m.matchId,
+            matchIndex: m.matchIndex,
+            itemA: m.itemA,
+            itemB: m.itemB,
+          })),
+          confirmedPlayerIds: getConfirmedPlayerIds(roomId),
+        }),
+      })
+    }
 
     // Re-send assignment to reconnecting player if game is active
     if (room.status === 'active') {
@@ -225,13 +289,17 @@ export function initSocketServer(httpServer: HTTPServer): void {
       if (!currentMatch) return
 
       // Phase: pending → start this match (debate phase)
-      // Gate: all active players must have confirmed their assignment first
+      // Gate: need at least 2 connected players (host + 1 other) and all must have confirmed.
+      // Grace players (tab closed) are excluded — they can't confirm while disconnected.
       if (currentMatch.phase === 'pending') {
-        const activePlayers = [...room.players.values()].filter(
-          (p) => p.status !== 'removed' && p.status !== 'timedout'
-        )
+        const activePlayers = [...room.players.values()].filter((p) => p.status === 'connected')
+        if (activePlayers.length < 2) return // need at least host + 1 other player
         const confirmed = getConfirmedPlayerIds(roomId)
-        if (confirmed.length < activePlayers.length) return // block until everyone's ready
+        const connectedConfirmed = confirmed.filter((pid) => {
+          const p = room.players.get(pid)
+          return p?.status === 'connected'
+        })
+        if (connectedConfirmed.length < activePlayers.length) return // block until everyone connected is ready
 
         currentMatch.phase = 'debate'
         const pub = toMatchPublic(currentMatch, totalMatches)
@@ -404,23 +472,114 @@ export function initSocketServer(httpServer: HTTPServer): void {
       player.to(roomId).emit(EVENTS.COIN_FLIP, { result, side, winnerItem })
     })
 
+    socket.on(EVENTS.HOST_PROCEED_ANYWAY, ({ playerId: targetId }: { playerId: string }) => {
+      if (playerState.playerId !== room.hostId) return
+      const target = room.players.get(targetId)
+      if (!target || target.status !== 'timedout') return
+      target.status = 'removed'
+      const removedPayload = {
+        playerId: targetId,
+        colour: target.colour,
+        status: 'removed' as const,
+      }
+      player.to(roomId).emit(EVENTS.PLAYER_REMOVED, removedPayload)
+      board.to(roomId).emit(EVENTS.PLAYER_REMOVED, removedPayload)
+
+      // Re-check all-voted if voting is in progress
+      const currentMatch = room.currentMatches[room.currentMatchIndex]
+      if (currentMatch?.phase === 'voting') {
+        const connectedIds = [...room.players.values()]
+          .filter((p) => p.status === 'connected' || p.status === 'grace')
+          .map((p) => p.playerId)
+        if (connectedIds.length === 0) return
+        const allVoted = connectedIds.every((pid) => pid in currentMatch.votes)
+        if (!allVoted) return
+
+        const aCount = Object.values(currentMatch.votes).filter((v) => v === 'A').length
+        const bCount = Object.values(currentMatch.votes).filter((v) => v === 'B').length
+        if (aCount > bCount) {
+          currentMatch.winner = 'A'
+          currentMatch.phase = 'result'
+          board.to(roomId).emit(EVENTS.VOTE_RESULT, { side: 'A', winnerItem: currentMatch.itemA })
+          player.to(roomId).emit(EVENTS.VOTE_RESULT, { side: 'A', winnerItem: currentMatch.itemA })
+        } else if (bCount > aCount) {
+          currentMatch.winner = 'B'
+          currentMatch.phase = 'result'
+          board.to(roomId).emit(EVENTS.VOTE_RESULT, { side: 'B', winnerItem: currentMatch.itemB })
+          player.to(roomId).emit(EVENTS.VOTE_RESULT, { side: 'B', winnerItem: currentMatch.itemB })
+        } else {
+          currentMatch.phase = 'tied'
+          board.to(roomId).emit(EVENTS.VOTE_RESULT, { side: 'tie', winnerItem: null })
+          player.to(roomId).emit(EVENTS.VOTE_RESULT, { side: 'tie', winnerItem: null })
+        }
+      }
+    })
+
+    socket.on(EVENTS.ROOM_RESET, () => {
+      // Host deliberately ended the game — broadcast immediately so board/players go home
+      if (playerState.playerId !== room.hostId) return
+      board.to(roomId).emit(EVENTS.ROOM_RESET)
+      player.to(roomId).emit(EVENTS.ROOM_RESET)
+    })
+
     socket.on('disconnect', () => {
       playerState.socketId = null
       playerState.status = 'grace'
-      // Delay PLAYER_LEFT by 300 ms — cancels if the player reconnects immediately
-      // (handles page navigation where old socket closes before new one opens)
+
+      // 300 ms debounce — handles fast page navigation where old socket closes before new one opens
       const disconnectedId = playerState.playerId
       setTimeout(() => {
         if (playerState.socketId !== null) return // Already reconnected
-        player.to(roomId).emit(EVENTS.PLAYER_LEFT, {
+
+        // Broadcast grace status to room
+        const leftPayload = {
           playerId: disconnectedId,
           colour: playerState.colour,
-        })
-        board.to(roomId).emit(EVENTS.PLAYER_LEFT, {
-          playerId: disconnectedId,
-          colour: playerState.colour,
-        })
+          status: 'grace' as const,
+        }
+        player.to(roomId).emit(EVENTS.PLAYER_LEFT, leftPayload)
+        board.to(roomId).emit(EVENTS.PLAYER_LEFT, leftPayload)
+
+        if (playerState.isHost) {
+          board.to(roomId).emit(EVENTS.HOST_DISCONNECTED, { hostName: playerState.displayName })
+          player.to(roomId).emit(EVENTS.HOST_DISCONNECTED, { hostName: playerState.displayName })
+        }
+
+        // Start 60s grace timer
+        const graceKey = `${roomId}:${disconnectedId}`
+        const graceTimer = setTimeout(() => {
+          graceTimers.delete(graceKey)
+          if (playerState.socketId !== null) return // Reconnected before timer fired
+          playerState.status = 'timedout'
+
+          // Broadcast timedout status to board + all players so dots update visually
+          const timedOutPayload = {
+            playerId: disconnectedId,
+            colour: playerState.colour,
+            status: 'timedout' as const,
+          }
+          board.to(roomId).emit(EVENTS.PLAYER_LEFT, timedOutPayload)
+          player.to(roomId).emit(EVENTS.PLAYER_LEFT, timedOutPayload)
+
+          if (playerState.isHost) {
+            // Host timed out — game is abandoned, notify everyone
+            board.to(roomId).emit(EVENTS.HOST_ABANDONED, { hostName: playerState.displayName })
+            player.to(roomId).emit(EVENTS.HOST_ABANDONED, { hostName: playerState.displayName })
+          } else {
+            // Notify host socket only for the "kick out" prompt
+            const hostPlayer = [...room.players.values()].find((p) => p.isHost)
+            if (hostPlayer?.socketId) {
+              player.to(hostPlayer.socketId).emit(EVENTS.PLAYER_TIMEOUT, {
+                playerId: disconnectedId,
+                displayName: playerState.displayName,
+                colour: playerState.colour,
+              })
+            }
+          }
+        }, 60_000)
+        graceTimers.set(graceKey, graceTimer)
       }, 300)
+
       console.log('[/player] disconnected', socket.id)
     })
   })

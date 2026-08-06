@@ -3,7 +3,14 @@ export const EVENTS = {
   PLAYER_JOINED: 'player-joined',
   PLAYER_LEFT: 'player-left',
   PLAYER_RECONNECT: 'player-reconnect',
+  PLAYER_TIMEOUT: 'player-timeout', // server → host socket only
+  PLAYER_REMOVED: 'player-removed', // server → room channels
+  REMOVED_FROM_GAME: 'removed-from-game', // server → removed player's socket only
   HOST_DISCONNECTED: 'host-disconnected',
+  HOST_RECONNECTED: 'host-reconnected', // server → board+player channels
+  HOST_ABANDONED: 'host-abandoned', // server → board+player channels (host timed out, offer Go Home)
+  ALL_PLAYERS_LEFT: 'all-players-left', // server → host socket only (host rejoins but everyone gone)
+  HOST_PROCEED_ANYWAY: 'host-proceed-anyway', // client → server
   // Pool generation
   POOL_PROGRESS: 'pool-progress',
   POOL_READY: 'pool-ready',

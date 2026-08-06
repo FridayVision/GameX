@@ -1,6 +1,7 @@
 'use client'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { MatchPublic } from '@/types/match.types'
+import type { TimedOutPlayer } from '@/hooks/use-player-socket'
 import { toRgba } from '@/lib/colours'
 
 interface HostMatchControlsProps {
@@ -10,9 +11,12 @@ interface HostMatchControlsProps {
   totalCount: number
   confirmedCount: number
   playerCount: number
+  timedOutPlayers?: TimedOutPlayer[]
   onCallVote: () => void
   onCoinFlip: () => void
   onNextMatch: () => void
+  onProceedAnyway?: (playerId: string) => void
+  onEndGame?: () => void
 }
 
 const HOLD_MS = 900
@@ -25,11 +29,15 @@ export function HostMatchControls({
   totalCount,
   confirmedCount,
   playerCount,
+  timedOutPlayers = [],
   onCallVote,
   onCoinFlip,
   onNextMatch,
+  onProceedAnyway,
+  onEndGame,
 }: HostMatchControlsProps) {
-  const allConfirmed = playerCount > 0 && confirmedCount >= playerCount
+  const notEnoughPlayers = playerCount < 2
+  const allConfirmed = !notEnoughPlayers && confirmedCount >= playerCount
   const [holdProgress, setHoldProgress] = useState(0)
   const [holdComplete, setHoldComplete] = useState(false)
   const holdStartRef = useRef<number | null>(null)
@@ -113,6 +121,136 @@ export function HostMatchControls({
         gap: 8,
       }}
     >
+      {/* Timed-out player notifications */}
+      {timedOutPlayers.map((tp) => (
+        <div
+          key={tp.playerId}
+          style={{
+            width: '100%',
+            maxWidth: 320,
+            display: 'flex',
+            alignItems: 'center',
+            gap: 10,
+            padding: '10px 14px',
+            borderRadius: 12,
+            background: 'rgba(8,8,8,0.92)',
+            border: '1px solid rgba(250,255,254,0.12)',
+            marginBottom: 2,
+          }}
+        >
+          {/* Colour dot */}
+          <div
+            style={{
+              width: 10,
+              height: 10,
+              borderRadius: '50%',
+              background: tp.colour,
+              flexShrink: 0,
+              boxShadow: `0 0 0 2px rgba(8,8,8,0.9), 0 0 8px ${tp.colour}`,
+            }}
+          />
+          <span
+            style={{
+              flex: 1,
+              fontSize: '0.72rem',
+              color: tp.colour,
+              fontWeight: 600,
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            {tp.displayName}
+          </span>
+          <span
+            style={{
+              fontSize: '0.65rem',
+              color: 'rgba(250,255,254,0.40)',
+              marginRight: 8,
+              flexShrink: 0,
+            }}
+          >
+            hasn&apos;t reconnected
+          </span>
+          <button
+            onClick={() => onProceedAnyway?.(tp.playerId)}
+            style={{
+              padding: '5px 10px',
+              borderRadius: 8,
+              border: '1px solid rgba(236,88,56,0.4)',
+              background: 'rgba(236,88,56,0.15)',
+              color: '#ec5838',
+              fontSize: '0.65rem',
+              fontWeight: 700,
+              cursor: 'pointer',
+              flexShrink: 0,
+              letterSpacing: '0.04em',
+            }}
+          >
+            Kick Out
+          </button>
+        </div>
+      ))}
+
+      {/* Not enough players warning */}
+      {playerCount < 2 && (
+        <div
+          style={{
+            width: '100%',
+            maxWidth: 320,
+            padding: '14px 16px',
+            borderRadius: 12,
+            background: 'rgba(8,8,8,0.96)',
+            border: '1px solid rgba(250,255,254,0.10)',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 10,
+            marginBottom: 2,
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <div
+              style={{
+                width: 7,
+                height: 7,
+                borderRadius: '50%',
+                background: 'rgba(250,255,254,0.25)',
+                flexShrink: 0,
+              }}
+            />
+            <span
+              style={{
+                fontSize: '0.75rem',
+                fontWeight: 700,
+                color: 'rgba(250,255,254,0.72)',
+              }}
+            >
+              Not enough players to continue
+            </span>
+          </div>
+          <p style={{ fontSize: '0.65rem', color: 'rgba(250,255,254,0.35)', lineHeight: 1.5 }}>
+            All other players have disconnected. End the game or wait for someone to reconnect.
+          </p>
+          <button
+            onClick={onEndGame}
+            style={{
+              width: '100%',
+              height: 44,
+              borderRadius: 10,
+              border: '1px solid rgba(250,255,254,0.15)',
+              background: 'rgba(250,255,254,0.06)',
+              color: 'rgba(250,255,254,0.65)',
+              fontWeight: 700,
+              fontSize: '0.82rem',
+              cursor: 'pointer',
+              letterSpacing: '0.03em',
+            }}
+          >
+            End Game
+          </button>
+        </div>
+      )}
+
       {/* HOST badge */}
       <div
         style={{
@@ -215,20 +353,23 @@ export function HostMatchControls({
       {/* Call Vote button */}
       {showCallVote && (
         <button
-          onClick={onCallVote}
+          onClick={notEnoughPlayers ? undefined : onCallVote}
+          disabled={notEnoughPlayers}
           style={{
             width: '100%',
             maxWidth: 320,
             height: 52,
             borderRadius: 12,
-            border: '2px solid rgba(236,88,56,0.6)',
-            background: 'rgba(236,88,56,0.15)',
-            color: '#ec5838',
+            border: notEnoughPlayers
+              ? '2px solid rgba(250,255,254,0.10)'
+              : '2px solid rgba(236,88,56,0.6)',
+            background: notEnoughPlayers ? 'rgba(250,255,254,0.03)' : 'rgba(236,88,56,0.15)',
+            color: notEnoughPlayers ? 'rgba(250,255,254,0.22)' : '#ec5838',
             fontWeight: 900,
             fontSize: '1rem',
-            cursor: 'pointer',
+            cursor: notEnoughPlayers ? 'not-allowed' : 'pointer',
             letterSpacing: '0.04em',
-            boxShadow: '0 0 20px rgba(236,88,56,0.18)',
+            boxShadow: notEnoughPlayers ? 'none' : '0 0 20px rgba(236,88,56,0.18)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
@@ -285,18 +426,21 @@ export function HostMatchControls({
       {/* Next Match button */}
       {showNextMatch && (
         <button
-          onClick={onNextMatch}
+          onClick={notEnoughPlayers ? undefined : onNextMatch}
+          disabled={notEnoughPlayers}
           style={{
             width: '100%',
             maxWidth: 320,
             height: 52,
             borderRadius: 12,
-            border: '2px solid rgba(21,244,199,0.45)',
-            background: 'rgba(21,244,199,0.10)',
-            color: '#15F4C7',
+            border: notEnoughPlayers
+              ? '2px solid rgba(250,255,254,0.10)'
+              : '2px solid rgba(21,244,199,0.45)',
+            background: notEnoughPlayers ? 'rgba(250,255,254,0.03)' : 'rgba(21,244,199,0.10)',
+            color: notEnoughPlayers ? 'rgba(250,255,254,0.22)' : '#15F4C7',
             fontWeight: 900,
             fontSize: '1rem',
-            cursor: 'pointer',
+            cursor: notEnoughPlayers ? 'not-allowed' : 'pointer',
             letterSpacing: '0.04em',
             display: 'flex',
             alignItems: 'center',
@@ -331,24 +475,30 @@ export function HostMatchControls({
           }}
         >
           <button
-            onPointerDown={startHold}
-            onPointerUp={endHold}
-            onPointerLeave={endHold}
-            onPointerCancel={endHold}
+            onPointerDown={notEnoughPlayers ? undefined : startHold}
+            onPointerUp={notEnoughPlayers ? undefined : endHold}
+            onPointerLeave={notEnoughPlayers ? undefined : endHold}
+            onPointerCancel={notEnoughPlayers ? undefined : endHold}
             onContextMenu={(e) => e.preventDefault()}
-            disabled={holdComplete}
+            disabled={holdComplete || notEnoughPlayers}
             style={{
               width: '100%',
               height: 60,
               borderRadius: 12,
-              border: holdComplete
-                ? '2px solid rgba(245,158,11,0.6)'
-                : '2px solid rgba(245,158,11,0.4)',
-              background: holdComplete ? 'rgba(245,158,11,0.18)' : 'rgba(245,158,11,0.08)',
-              color: '#f59e0b',
+              border: notEnoughPlayers
+                ? '2px solid rgba(250,255,254,0.10)'
+                : holdComplete
+                  ? '2px solid rgba(245,158,11,0.6)'
+                  : '2px solid rgba(245,158,11,0.4)',
+              background: notEnoughPlayers
+                ? 'rgba(250,255,254,0.03)'
+                : holdComplete
+                  ? 'rgba(245,158,11,0.18)'
+                  : 'rgba(245,158,11,0.08)',
+              color: notEnoughPlayers ? 'rgba(250,255,254,0.22)' : '#f59e0b',
               fontWeight: 900,
               fontSize: '0.95rem',
-              cursor: holdComplete ? 'default' : 'pointer',
+              cursor: notEnoughPlayers || holdComplete ? 'not-allowed' : 'pointer',
               letterSpacing: '0.04em',
               display: 'flex',
               alignItems: 'center',

@@ -1,6 +1,6 @@
 # GameX — Dev Task List
 
-Generated: 2026-07-27 | Last updated: 2026-08-05 (M5 complete + UX polish)
+Generated: 2026-07-27 | Last updated: 2026-08-05 (M6 complete — disconnection & reconnection)
 Tech stack: Next.js 16 + Socket.IO 4 + TypeScript 6 + Tailwind 4
 Default config: 4 players, 16 items | Hosting: Railway (custom server)
 
@@ -128,12 +128,16 @@ _Core runtime: reveal → debate → vote → advance. Paced entirely by host._
 
 _Grace timer, state sync on rejoin, permanent removal. Required before any real session._
 
-- [ ] Grace timer logic in room-store: `DisconnectedPlayer` records with `graceExpiresAt`; server-side `setTimeout` for 60 s
-- [ ] On grace expiry: update `PlayerState.status = 'timedout'`; emit `PLAYER_TIMEOUT` to host socket only → Host Panel shows "Player X timed out — proceed anyway?"
-- [ ] Host "proceed anyway" handler: emit `PLAYER_REMOVED` to room channels; player excluded from next round assignment; existing assignment record frozen
-- [ ] Reconnect within grace: validate playerToken on socket handshake; clear timer; sync current match state and current-round assignment to reconnected socket; emit `PLAYER_RECONNECT` to room channels
-- [ ] Host disconnect: emit `HOST_DISCONNECTED` to `/board:roomCode` and `/player:roomCode`; Board shows "Host disconnected — game paused"; disable vote buttons on all Player Views; start 60 s host grace timer
-- [ ] Host reconnect: POST `/api/room/reclaim` → new token → reconnect to `/player` namespace → emit `HOST_RECONNECTED` → resume from current state
+- [x] Grace timer logic in socket-server: module-level `graceTimers` Map; server-side 60 s `setTimeout` per disconnected player
+- [x] On grace expiry: update `PlayerState.status = 'timedout'`; emit `PLAYER_TIMEOUT` to host socket only → Host Panel shows "Player X timed out — proceed anyway?"
+- [x] Host "proceed anyway" handler (`HOST_PROCEED_ANYWAY`): emit `PLAYER_REMOVED` to room channels; re-checks all-voted if voting in progress
+- [x] Reconnect within grace (or timedout): validate playerToken on socket handshake; clear timer; emit `PLAYER_RECONNECT` to room channels; re-send assignment + match state
+- [x] Host disconnect: emit `HOST_DISCONNECTED` to `/board` and `/player`; Board shows full-screen "Host disconnected" overlay; vote buttons disabled on Player Views; 60 s grace timer
+- [x] Host reconnect: POST `/api/room/reclaim` → clears grace timer → emits `HOST_RECONNECTED` → board/player overlays clear; also via socket reconnect path
+- [x] `PLAYER_LEFT` now carries `status` field so dots go grey (grace) instead of disappearing
+- [x] `PLAYER_TIMEOUT`, `PLAYER_REMOVED`, `HOST_RECONNECTED`, `HOST_PROCEED_ANYWAY` added to `lib/socket-events.ts`
+- [x] `gamePaused` state field in both hooks; passed to board overlay and player banner
+- [x] `timedOutPlayers` list in `use-player-socket`; notification cards in `HostMatchControls`
 
 ---
 
