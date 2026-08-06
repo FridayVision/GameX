@@ -1,6 +1,6 @@
 # GameX — Dev Task List
 
-Generated: 2026-07-27 | Last updated: 2026-08-05 (M6 complete — disconnection & reconnection)
+Generated: 2026-07-27 | Last updated: 2026-08-06 (M6 complete — disconnection & reconnection)
 Tech stack: Next.js 16 + Socket.IO 4 + TypeScript 6 + Tailwind 4
 Default config: 4 players, 16 items | Hosting: Railway (custom server)
 
@@ -129,15 +129,21 @@ _Core runtime: reveal → debate → vote → advance. Paced entirely by host._
 _Grace timer, state sync on rejoin, permanent removal. Required before any real session._
 
 - [x] Grace timer logic in socket-server: module-level `graceTimers` Map; server-side 60 s `setTimeout` per disconnected player
-- [x] On grace expiry: update `PlayerState.status = 'timedout'`; emit `PLAYER_TIMEOUT` to host socket only → Host Panel shows "Player X timed out — proceed anyway?"
-- [x] Host "proceed anyway" handler (`HOST_PROCEED_ANYWAY`): emit `PLAYER_REMOVED` to room channels; re-checks all-voted if voting in progress
+- [x] On grace expiry: update `PlayerState.status = 'timedout'`; emit `PLAYER_TIMEOUT` to host socket only → Host Panel shows "Kick Out" prompt per timed-out player
+- [x] Host kick-out handler (`HOST_PROCEED_ANYWAY`): marks player `removed`, emits `PLAYER_REMOVED` to room channels; re-checks all-voted if voting in progress
+- [x] `REMOVED_FROM_GAME` event: server emits to removed player's socket on reconnect attempt, then drops the connection — prevents kicked players rejoining
 - [x] Reconnect within grace (or timedout): validate playerToken on socket handshake; clear timer; emit `PLAYER_RECONNECT` to room channels; re-send assignment + match state
-- [x] Host disconnect: emit `HOST_DISCONNECTED` to `/board` and `/player`; Board shows full-screen "Host disconnected" overlay; vote buttons disabled on Player Views; 60 s grace timer
-- [x] Host reconnect: POST `/api/room/reclaim` → clears grace timer → emits `HOST_RECONNECTED` → board/player overlays clear; also via socket reconnect path
-- [x] `PLAYER_LEFT` now carries `status` field so dots go grey (grace) instead of disappearing
-- [x] `PLAYER_TIMEOUT`, `PLAYER_REMOVED`, `HOST_RECONNECTED`, `HOST_PROCEED_ANYWAY` added to `lib/socket-events.ts`
-- [x] `gamePaused` state field in both hooks; passed to board overlay and player banner
-- [x] `timedOutPlayers` list in `use-player-socket`; notification cards in `HostMatchControls`
+- [x] Host disconnect: emit `HOST_DISCONNECTED` to `/board` and `/player`; Board shows full-screen overlay; vote buttons disabled on Player Views; 60 s grace timer
+- [x] Host grace expiry: emit `HOST_ABANDONED` to board + players — advisory "Go Home" offer; host can still rejoin if players remain (reversible)
+- [x] Host reconnect via socket: if players remain → emit `HOST_RECONNECTED` (resets `hostAbandoned` + `gamePaused`); if all players gone → emit `ALL_PLAYERS_LEFT` to host only
+- [x] Host reconnect via `/api/room/reclaim`: clears grace timer, emits `HOST_RECONNECTED` to board + player channels
+- [x] `ROOM_RESET` event: host deliberately ends game → broadcasts to board + players; board navigates home immediately; non-host players see "Game ended" screen
+- [x] `PLAYER_LEFT` carries `status` field so board dots go grey (grace) or dashed ring (timedout) instead of disappearing
+- [x] All host controls (`Start Match`, `Call Vote`, `Next Match`, `Coin Flip`) disabled when `playerCount < 2`; "Not enough players" warning card with End Game button
+- [x] `PLAYER_TIMEOUT`, `PLAYER_REMOVED`, `HOST_RECONNECTED`, `HOST_PROCEED_ANYWAY`, `REMOVED_FROM_GAME`, `HOST_ABANDONED`, `ALL_PLAYERS_LEFT`, `ROOM_RESET` added to `lib/socket-events.ts`
+- [x] `gamePaused` + `timedOutPlayers` + `hostAbandoned` + `allPlayersLeft` + `gameEnded` state in hooks; wired to overlays and screens
+- [x] sessionStorage → localStorage so tokens survive tab close
+- [x] Safari backface-visibility fix on assignment card flip via JS state (`backVisible`)
 
 ---
 
