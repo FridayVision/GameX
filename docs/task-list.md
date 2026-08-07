@@ -1,6 +1,6 @@
 # GameX — Dev Task List
 
-Generated: 2026-07-27 | Last updated: 2026-08-07 (M7 UI polish — board reveal table TV layout, player reveal card layout, cell alignment)
+Generated: 2026-07-27 | Last updated: 2026-08-07 (added M8 deployment milestone + return-to-menu button)
 Tech stack: Next.js 16 + Socket.IO 4 + TypeScript 6 + Tailwind 4
 Default config: 4 players, 16 items | Hosting: Railway (custom server)
 
@@ -162,6 +162,40 @@ _Final match → champion → assignment history table._
 - [x] `champion: Item | null` added to `RoomState` type and initialized in `room-store.ts`
 - [x] `champ-pulse` + `spotlight-breathe` keyframes added to `globals.css`
 - [x] "New Game" / `ROOM_RESET` flow already in place from M6 (host `handleEndGame` → `emitRoomReset` → navigate home)
+
+---
+
+## Milestone 8 — Production Deployment (Railway)
+
+_Note: Vercel is not compatible with this stack — Socket.IO requires a persistent server and the Python pool generator runs as a subprocess. Railway is the correct target (custom server support, Python runtime available)._
+
+### Pre-flight fixes
+
+- [ ] **Room cleanup / TTL** — add a 4-hour TTL to rooms in `lib/room-store.ts`; sweep expired rooms every 30 min; prevents memory leak on long-running server
+- [ ] **ROOM_NOT_FOUND handling** — on socket connect, if room doesn't exist emit `ROOM_NOT_FOUND` to client; client clears localStorage and redirects to `/`; prevents stuck screens after server restart
+- [ ] **Pool generation failure UI** — handle non-zero exit from `pool_generator.py`; emit `POOL_ERROR` event; host sees retry option instead of infinite spinner
+- [ ] **Return to Main Menu on champion screen** — add a subtle exit option for non-host players on `PlayerChampionScreen` so they aren't stuck if host leaves without triggering reveal
+
+### Environment & config
+
+- [ ] Create `.env.example` with all required keys: `TMDB_API_KEY`, `REDDIT_CLIENT_ID`, `REDDIT_CLIENT_SECRET`, `BRAVE_API_KEY` (optional)
+- [ ] Verify `server.ts` reads `PORT` from `process.env.PORT` (Railway injects this)
+- [ ] Add `python3` availability check on server start — log warning if missing so pool generation failure is obvious
+
+### Railway setup
+
+- [ ] Create `railway.toml` — set build command (`npm run build`), start command (`npm start`), and Python nixpack
+- [ ] Configure Railway environment variables (all keys from `.env.example`)
+- [ ] Set Railway region closest to target audience
+- [ ] Enable Railway's persistent volume if needed (logs only — all state is in-memory by design)
+- [ ] Verify custom domain + SSL termination works with Socket.IO upgrade headers (`websocket` transport)
+
+### Smoke test checklist (post-deploy)
+
+- [ ] Create room → join 4 players on mobile → board on desktop → full game run-through
+- [ ] Kill one player tab mid-vote → grace timer fires → host proceeds anyway
+- [ ] Close host tab → board shows paused → reclaim via reclaimCode → game resumes
+- [ ] Host clicks "Return to Main Menu" on reveal table → board + all players navigate home
 
 ---
 
