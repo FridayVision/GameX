@@ -1,6 +1,6 @@
 # GameX — Dev Task List
 
-Generated: 2026-07-27 | Last updated: 2026-08-07 (M7 complete — champion screen & post-game reveal)
+Generated: 2026-07-27 | Last updated: 2026-08-07 (M7 UI polish — board reveal table TV layout, player reveal card layout, cell alignment)
 Tech stack: Next.js 16 + Socket.IO 4 + TypeScript 6 + Tailwind 4
 Default config: 4 players, 16 items | Hosting: Railway (custom server)
 
