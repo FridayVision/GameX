@@ -130,16 +130,22 @@ export function BoardRevealTable({ rows, champion, totalRounds }: BoardRevealTab
           </div>
         </header>
 
-        {/* Table */}
-        <div className="flex-1 flex flex-col min-h-0">
+        {/* Table — solid dark card so LED dots don't bleed through */}
+        <div
+          className="flex-1 flex flex-col min-h-0 reveal-fade-up d-200"
+          style={{
+            background: 'rgba(4,8,3,0.92)',
+            backdropFilter: 'blur(12px)',
+            border: '1px solid rgba(250,255,254,0.09)',
+            borderRadius: 16,
+            overflow: 'hidden',
+          }}
+        >
           {/* Column headers */}
-          <div
-            className="reveal-fade-up d-200"
-            style={{ display: 'grid', gridTemplateColumns: gridTemplate }}
-          >
+          <div style={{ display: 'grid', gridTemplateColumns: gridTemplate }}>
             <div
               style={{
-                padding: '0 24px 14px',
+                padding: '18px 24px 14px',
                 fontSize: '0.72rem',
                 fontWeight: 700,
                 letterSpacing: '0.20em',
@@ -154,12 +160,12 @@ export function BoardRevealTable({ rows, champion, totalRounds }: BoardRevealTab
               <div
                 key={i}
                 style={{
-                  padding: '0 28px 14px',
+                  padding: '18px 28px 14px',
                   fontSize: '0.72rem',
                   fontWeight: 700,
                   letterSpacing: '0.20em',
                   textTransform: 'uppercase',
-                  color: 'rgba(250,255,254,0.28)',
+                  color: 'rgba(250,255,254,0.50)',
                 }}
               >
                 {roundColHeader(i, totalRounds)}
@@ -168,10 +174,7 @@ export function BoardRevealTable({ rows, champion, totalRounds }: BoardRevealTab
           </div>
 
           {/* Divider */}
-          <div
-            className="reveal-fade-up d-200"
-            style={{ height: 1, background: 'rgba(250,255,254,0.10)', marginBottom: 6 }}
-          />
+          <div style={{ height: 1, background: 'rgba(250,255,254,0.10)', marginBottom: 4 }} />
 
           {/* Player rows */}
           {rows.map((row, rowIdx) => (
@@ -193,7 +196,7 @@ export function BoardRevealTable({ rows, champion, totalRounds }: BoardRevealTab
                 style={{
                   position: 'absolute',
                   inset: 0,
-                  background: toRgba(row.colour, 0.035),
+                  background: toRgba(row.colour, 0.04),
                   pointerEvents: 'none',
                   zIndex: 0,
                 }}
@@ -221,7 +224,7 @@ export function BoardRevealTable({ rows, champion, totalRounds }: BoardRevealTab
                   }}
                 />
                 <span
-                  style={{ fontSize: '1.10rem', fontWeight: 700, color: 'rgba(250,255,254,0.90)' }}
+                  style={{ fontSize: '1.10rem', fontWeight: 700, color: 'rgba(250,255,254,0.92)' }}
                 >
                   {row.displayName}
                 </span>
@@ -257,12 +260,11 @@ export function BoardRevealTable({ rows, champion, totalRounds }: BoardRevealTab
                       padding: '24px 28px',
                       display: 'flex',
                       alignItems: 'center',
-                      gap: 9,
                       fontSize: '0.95rem',
                       fontWeight: 600,
-                      color: isChamp ? 'rgba(250,255,254,0.88)' : 'rgba(250,255,254,0.45)',
-                      borderLeft: '1px solid rgba(250,255,254,0.05)',
-                      background: isChamp ? 'rgba(236,88,56,0.08)' : undefined,
+                      color: isChamp ? '#fafffe' : 'rgba(250,255,254,0.60)',
+                      borderLeft: '1px solid rgba(250,255,254,0.07)',
+                      background: isChamp ? 'rgba(236,88,56,0.10)' : undefined,
                     }}
                   >
                     {isChamp && (
@@ -272,8 +274,8 @@ export function BoardRevealTable({ rows, champion, totalRounds }: BoardRevealTab
                           left: 0,
                           top: 14,
                           bottom: 14,
-                          width: 2,
-                          background: 'rgba(236,88,56,0.62)',
+                          width: 3,
+                          background: '#ec5838',
                           borderRadius: 1,
                         }}
                       />

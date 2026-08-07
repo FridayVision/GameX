@@ -8,6 +8,8 @@ interface PlayerChampionScreenProps {
   totalRounds: number
   isHost: boolean
   onReveal: () => void
+  playerName?: string
+  playerColour?: string
 }
 
 function roundLabel(index: number, total: number): string {
@@ -22,6 +24,8 @@ export function PlayerChampionScreen({
   totalRounds,
   isHost,
   onReveal,
+  playerName,
+  playerColour,
 }: PlayerChampionScreenProps) {
   const [loaded, setLoaded] = useState(false)
 
@@ -32,8 +36,7 @@ export function PlayerChampionScreen({
   return (
     <div
       className={`h-[100dvh]${loaded ? ' is-loaded' : ''}`}
-      id="champ-root"
-      style={{ position: 'relative', overflow: 'hidden' }}
+      style={{ position: 'relative', overflow: 'hidden', background: '#080808' }}
     >
       {/* Phone-style LED background */}
       <div className="fixed inset-0 z-0 pointer-events-none overflow-hidden" aria-hidden="true">
@@ -67,22 +70,22 @@ export function PlayerChampionScreen({
         aria-hidden="true"
       />
 
-      {/* Content */}
+      {/* Scrollable content */}
       <div
-        className="relative z-10 h-[100dvh] flex flex-col items-center justify-center px-4 py-6"
-        style={{ gap: 0, overflowY: 'auto' }}
+        className="relative z-10 h-[100dvh] flex flex-col items-center px-4 py-6"
+        style={{ gap: 0, overflowY: 'auto', justifyContent: 'center' }}
       >
         {/* Round context pill */}
-        <div className="reveal-fade-up d-100" style={{ marginBottom: 14 }}>
+        <div className="reveal-fade-up d-100" style={{ marginBottom: 12 }}>
           <div
             style={{
-              background: 'rgba(4,8,3,0.60)',
-              backdropFilter: 'blur(8px)',
-              border: '1px solid rgba(250,255,254,0.08)',
+              background: 'rgba(8,8,8,0.92)',
+              backdropFilter: 'blur(12px)',
+              border: '1px solid rgba(250,255,254,0.12)',
               borderRadius: 8,
               padding: '5px 14px',
               textAlign: 'center',
-              color: 'rgba(250,255,254,0.45)',
+              color: 'rgba(250,255,254,0.55)',
               letterSpacing: '0.14em',
               textTransform: 'uppercase',
               fontSize: '0.62rem',
@@ -93,19 +96,19 @@ export function PlayerChampionScreen({
           </div>
         </div>
 
-        {/* THE CHAMPION heading — dark card for readability over LED */}
+        {/* THE CHAMPION heading — solid dark card */}
         <div
           className="reveal-fade-up d-200"
           style={{
             textAlign: 'center',
             lineHeight: 1,
             marginBottom: 16,
-            background: 'rgba(8,8,8,0.72)',
-            backdropFilter: 'blur(12px)',
-            border: '1px solid rgba(250,255,254,0.10)',
+            background: 'rgba(8,8,8,0.94)',
+            backdropFilter: 'blur(16px)',
+            border: '1px solid rgba(250,255,254,0.12)',
             borderRadius: 14,
-            padding: '14px 28px',
-            boxShadow: '0 0 0 1px rgba(0,0,0,.80), 0 8px 28px rgba(0,0,0,.55)',
+            padding: '14px 32px',
+            boxShadow: '0 0 0 1px rgba(0,0,0,.90), 0 8px 28px rgba(0,0,0,.70)',
           }}
         >
           <p
@@ -114,7 +117,7 @@ export function PlayerChampionScreen({
               fontWeight: 700,
               letterSpacing: '0.38em',
               textTransform: 'uppercase',
-              color: 'rgba(250,255,254,0.35)',
+              color: 'rgba(250,255,254,0.45)',
               margin: '0 0 2px',
             }}
           >
@@ -137,7 +140,7 @@ export function PlayerChampionScreen({
         </div>
 
         {/* Champion card */}
-        <div className="reveal-scale-in d-300" style={{ position: 'relative', marginBottom: 8 }}>
+        <div className="reveal-scale-in d-300" style={{ position: 'relative', marginBottom: 12 }}>
           <div
             style={{
               width: 200,
@@ -199,7 +202,7 @@ export function PlayerChampionScreen({
             >
               <div
                 style={{
-                  background: 'rgba(4,8,3,0.72)',
+                  background: 'rgba(4,8,3,0.85)',
                   backdropFilter: 'blur(10px)',
                   border: '1px solid rgba(250,255,254,0.09)',
                   borderRadius: 8,
@@ -235,130 +238,195 @@ export function PlayerChampionScreen({
           </div>
         </div>
 
-        {/* Path to the top — horizontally scrollable on small screens */}
-        {path.length > 0 && (
-          <div className="reveal-fade-up d-500" style={{ marginTop: 6 }}>
-            <p
+        {/* Player identity chip — "You are: [name]" */}
+        {playerName && playerColour && (
+          <div className="reveal-fade-up d-400" style={{ marginBottom: 12 }}>
+            <div
               style={{
-                fontSize: '0.58rem',
-                fontWeight: 700,
-                letterSpacing: '0.20em',
-                textTransform: 'uppercase',
-                color: 'rgba(250,255,254,0.25)',
-                textAlign: 'center',
-                margin: '0 0 10px',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 8,
+                background: 'rgba(8,8,8,0.92)',
+                backdropFilter: 'blur(12px)',
+                border: '1px solid rgba(250,255,254,0.10)',
+                borderRadius: 20,
+                padding: '6px 14px 6px 8px',
               }}
             >
-              PATH TO THE TOP
-            </p>
-            <div style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
-              <div style={{ display: 'flex', alignItems: 'center', paddingBottom: 4 }}>
-                {path.flatMap((item, i) => [
-                  i > 0 ? (
+              <div
+                style={{
+                  width: 14,
+                  height: 14,
+                  borderRadius: '50%',
+                  background: playerColour,
+                  boxShadow: `0 0 8px ${playerColour}55`,
+                  flexShrink: 0,
+                }}
+              />
+              <span
+                style={{
+                  fontSize: '0.72rem',
+                  fontWeight: 700,
+                  color: 'rgba(250,255,254,0.70)',
+                }}
+              >
+                {playerName}
+              </span>
+            </div>
+          </div>
+        )}
+
+        {/* Path to the top — solid dark card, scrollable */}
+        {path.length > 0 && (
+          <div
+            className="reveal-fade-up d-500"
+            style={{ width: '100%', maxWidth: 400, marginBottom: 12 }}
+          >
+            <div
+              style={{
+                background: 'rgba(8,8,8,0.92)',
+                backdropFilter: 'blur(14px)',
+                border: '1px solid rgba(250,255,254,0.10)',
+                borderRadius: 14,
+                padding: '14px 16px',
+              }}
+            >
+              <p
+                style={{
+                  fontSize: '0.55rem',
+                  fontWeight: 700,
+                  letterSpacing: '0.22em',
+                  textTransform: 'uppercase',
+                  color: 'rgba(250,255,254,0.50)',
+                  textAlign: 'center',
+                  margin: '0 0 12px',
+                }}
+              >
+                Path to the Top
+              </p>
+              <div style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
+                <div
+                  style={{ display: 'flex', alignItems: 'flex-start', paddingBottom: 2, gap: 0 }}
+                >
+                  {path.flatMap((item, i) => [
+                    i > 0 ? (
+                      <div
+                        key={`arrow-${i}`}
+                        style={{
+                          width: 18,
+                          flexShrink: 0,
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          paddingBottom: 24,
+                          color: 'rgba(250,255,254,0.30)',
+                          fontSize: '0.75rem',
+                          alignSelf: 'center',
+                        }}
+                      >
+                        →
+                      </div>
+                    ) : null,
                     <div
-                      key={`arrow-${i}`}
+                      key={item.itemId}
                       style={{
-                        width: 22,
-                        flexShrink: 0,
                         display: 'flex',
+                        flexDirection: 'column',
                         alignItems: 'center',
-                        justifyContent: 'center',
-                        paddingBottom: 22,
-                        color: 'rgba(250,255,254,0.18)',
-                        fontSize: '0.80rem',
+                        gap: 6,
+                        flexShrink: 0,
                       }}
                     >
-                      →
-                    </div>
-                  ) : null,
-                  <div
-                    key={item.itemId}
-                    style={{
-                      display: 'flex',
-                      flexDirection: 'column',
-                      alignItems: 'center',
-                      gap: 6,
-                      flexShrink: 0,
-                    }}
-                  >
-                    <div
-                      style={{
-                        width: 70,
-                        height: 105,
-                        borderRadius: 7,
-                        overflow: 'hidden',
-                        position: 'relative',
-                        outline: '1px solid rgba(255,255,255,0.06)',
-                      }}
-                    >
-                      {item.imageUrl && (
+                      <div
+                        style={{
+                          width: 66,
+                          height: 99,
+                          borderRadius: 7,
+                          overflow: 'hidden',
+                          position: 'relative',
+                          outline: '1px solid rgba(255,255,255,0.08)',
+                        }}
+                      >
+                        {item.imageUrl ? (
+                          <div
+                            style={{
+                              position: 'absolute',
+                              inset: 0,
+                              backgroundImage: `url(${item.imageUrl})`,
+                              backgroundSize: 'cover',
+                              backgroundPosition: 'center',
+                              filter: 'grayscale(0.75) brightness(0.45)',
+                            }}
+                          />
+                        ) : (
+                          <div
+                            style={{
+                              position: 'absolute',
+                              inset: 0,
+                              background: '#1a1a1a',
+                            }}
+                          />
+                        )}
                         <div
                           style={{
                             position: 'absolute',
                             inset: 0,
-                            backgroundImage: `url(${item.imageUrl})`,
-                            backgroundSize: 'cover',
-                            backgroundPosition: 'center',
-                            filter: 'grayscale(0.75) brightness(0.45)',
+                            background:
+                              'linear-gradient(to top, rgba(0,0,0,0.92) 0%, rgba(0,0,0,0.45) 50%, transparent 100%)',
                           }}
                         />
-                      )}
+                        <div
+                          style={{
+                            position: 'absolute',
+                            bottom: 0,
+                            left: 0,
+                            right: 0,
+                            padding: '5px 6px 7px',
+                            fontSize: '0.56rem',
+                            fontWeight: 700,
+                            color: 'rgba(250,255,254,0.75)',
+                            lineHeight: 1.2,
+                          }}
+                        >
+                          {item.title}
+                        </div>
+                      </div>
+                      {/* Round label — pill with bg */}
                       <div
                         style={{
-                          position: 'absolute',
-                          inset: 0,
-                          background:
-                            'linear-gradient(to top, rgba(0,0,0,0.92) 0%, rgba(0,0,0,0.55) 45%, transparent 100%)',
-                        }}
-                      />
-                      <div
-                        style={{
-                          position: 'absolute',
-                          bottom: 0,
-                          left: 0,
-                          right: 0,
-                          padding: '6px 7px 8px',
-                          fontSize: '0.58rem',
+                          background: 'rgba(250,255,254,0.08)',
+                          border: '1px solid rgba(250,255,254,0.12)',
+                          borderRadius: 4,
+                          padding: '2px 7px',
+                          fontSize: '0.50rem',
                           fontWeight: 700,
-                          color: 'rgba(250,255,254,0.55)',
-                          lineHeight: 1.2,
+                          letterSpacing: '0.14em',
+                          textTransform: 'uppercase',
+                          color: 'rgba(250,255,254,0.65)',
+                          whiteSpace: 'nowrap',
                         }}
                       >
-                        {item.title}
+                        {roundLabel(i, totalRounds)}
                       </div>
-                    </div>
-                    <span
-                      style={{
-                        fontSize: '0.55rem',
-                        fontWeight: 700,
-                        letterSpacing: '0.14em',
-                        textTransform: 'uppercase',
-                        color: 'rgba(250,255,254,0.28)',
-                      }}
-                    >
-                      {roundLabel(i, totalRounds)}
-                    </span>
-                  </div>,
-                ])}
+                    </div>,
+                  ])}
+                </div>
               </div>
             </div>
           </div>
         )}
 
-        {/* Host-only: Reveal Assignments button */}
+        {/* Host-only: Reveal Assignments button — solid dark bg */}
         {isHost && (
-          <div
-            className="reveal-fade-up d-500"
-            style={{ marginTop: 20, width: '100%', maxWidth: 280 }}
-          >
+          <div className="reveal-fade-up d-500" style={{ width: '100%', maxWidth: 320 }}>
             <button
               onClick={onReveal}
               style={{
                 width: '100%',
                 height: 52,
                 borderRadius: 12,
-                border: '2px solid rgba(21,244,199,0.45)',
-                background: 'rgba(21,244,199,0.10)',
+                border: '2px solid rgba(21,244,199,0.55)',
+                background: 'rgba(8,8,8,0.95)',
                 color: '#15F4C7',
                 fontWeight: 900,
                 fontSize: '0.95rem',
@@ -368,6 +436,7 @@ export function PlayerChampionScreen({
                 alignItems: 'center',
                 justifyContent: 'center',
                 gap: 8,
+                boxShadow: '0 0 20px rgba(21,244,199,0.10)',
               }}
             >
               <svg
@@ -386,26 +455,42 @@ export function PlayerChampionScreen({
           </div>
         )}
 
-        {/* Non-host: waiting message */}
+        {/* Non-host: waiting — solid dark bg card */}
         {!isHost && (
-          <div
-            className="reveal-fade-up d-500"
-            style={{ marginTop: 20, display: 'flex', alignItems: 'center', gap: 8 }}
-          >
-            <span
-              className="anim-waiting-dot"
+          <div className="reveal-fade-up d-500" style={{ width: '100%', maxWidth: 320 }}>
+            <div
               style={{
-                display: 'inline-block',
-                width: 5,
-                height: 5,
-                borderRadius: '50%',
-                background: 'rgba(250,255,254,0.35)',
-                flexShrink: 0,
+                background: 'rgba(8,8,8,0.92)',
+                backdropFilter: 'blur(12px)',
+                border: '1px solid rgba(250,255,254,0.10)',
+                borderRadius: 12,
+                padding: '14px 18px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 10,
               }}
-            />
-            <span style={{ fontSize: '0.68rem', color: 'rgba(250,255,254,0.35)' }}>
-              Waiting for host to reveal assignments…
-            </span>
+            >
+              <span
+                className="anim-waiting-dot"
+                style={{
+                  display: 'inline-block',
+                  width: 6,
+                  height: 6,
+                  borderRadius: '50%',
+                  background: '#ec5838',
+                  flexShrink: 0,
+                }}
+              />
+              <span
+                style={{
+                  fontSize: '0.72rem',
+                  fontWeight: 600,
+                  color: 'rgba(250,255,254,0.60)',
+                }}
+              >
+                Waiting for host to reveal assignments…
+              </span>
+            </div>
           </div>
         )}
       </div>

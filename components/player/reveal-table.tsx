@@ -29,8 +29,6 @@ export function PlayerRevealTable({
     requestAnimationFrame(() => setTimeout(() => setLoaded(true), 80))
   }, [])
 
-  const gridTemplate = `140px repeat(${totalRounds}, minmax(90px, 1fr))`
-
   return (
     <div
       className={`h-[100dvh] flex flex-col${loaded ? ' is-loaded' : ''}`}
@@ -50,17 +48,17 @@ export function PlayerRevealTable({
       </div>
 
       {/* Content */}
-      <div className="relative z-10 flex flex-col h-full" style={{ padding: '24px 0 24px' }}>
-        {/* Header */}
-        <div className="reveal-fade-up d-100 flex-shrink-0" style={{ padding: '0 20px 20px' }}>
+      <div className="relative z-10 flex flex-col h-full" style={{ padding: '20px 0 0' }}>
+        {/* Header card */}
+        <div className="reveal-fade-up d-100 flex-shrink-0" style={{ padding: '0 16px 16px' }}>
           <div
             style={{
-              background: 'rgba(8,8,8,0.85)',
-              backdropFilter: 'blur(14px)',
-              border: '1px solid rgba(250,255,254,0.10)',
+              background: 'rgba(8,8,8,0.95)',
+              backdropFilter: 'blur(16px)',
+              border: '1px solid rgba(250,255,254,0.12)',
               borderRadius: 14,
-              padding: '16px 20px',
-              boxShadow: '0 0 0 1px rgba(0,0,0,.70), 0 8px 28px rgba(0,0,0,.55)',
+              padding: '16px 18px',
+              boxShadow: '0 0 0 1px rgba(0,0,0,.85), 0 8px 28px rgba(0,0,0,.70)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'space-between',
@@ -70,11 +68,11 @@ export function PlayerRevealTable({
             <div>
               <p
                 style={{
-                  fontSize: '0.58rem',
+                  fontSize: '0.56rem',
                   fontWeight: 700,
                   letterSpacing: '0.20em',
                   textTransform: 'uppercase',
-                  color: 'rgba(250,255,254,0.30)',
+                  color: 'rgba(250,255,254,0.40)',
                   margin: '0 0 3px',
                 }}
               >
@@ -82,7 +80,7 @@ export function PlayerRevealTable({
               </p>
               <h1
                 style={{
-                  fontSize: '1.45rem',
+                  fontSize: '1.35rem',
                   fontWeight: 900,
                   letterSpacing: '-0.01em',
                   textTransform: 'uppercase',
@@ -94,209 +92,204 @@ export function PlayerRevealTable({
                 Who Defended What
               </h1>
             </div>
-            <div style={{ textAlign: 'right', flexShrink: 0 }}>
+            <div
+              style={{
+                textAlign: 'right',
+                flexShrink: 0,
+                background: 'rgba(236,88,56,0.08)',
+                border: '1px solid rgba(236,88,56,0.22)',
+                borderRadius: 10,
+                padding: '8px 12px',
+              }}
+            >
               <p
                 style={{
-                  fontSize: '0.52rem',
+                  fontSize: '0.50rem',
                   fontWeight: 700,
                   letterSpacing: '0.16em',
                   textTransform: 'uppercase',
-                  color: 'rgba(250,255,254,0.28)',
+                  color: 'rgba(250,255,254,0.40)',
                   margin: '0 0 2px',
                 }}
               >
                 Champion
               </p>
-              <p style={{ fontSize: '0.85rem', fontWeight: 700, color: '#ec5838', margin: 0 }}>
+              <p style={{ fontSize: '0.82rem', fontWeight: 700, color: '#ec5838', margin: 0 }}>
                 {champion.title}
               </p>
             </div>
           </div>
         </div>
 
-        {/* Table — horizontally scrollable */}
-        <div style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden' }}>
-          <div style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch', minWidth: '100%' }}>
-            <div style={{ minWidth: `${140 + totalRounds * 90}px` }}>
-              {/* Column headers */}
+        {/* Player cards — vertically stacked, scrollable */}
+        <div className="scroll-thin" style={{ flex: 1, overflowY: 'auto', padding: '0 16px 24px' }}>
+          {rows.map((row, rowIdx) => {
+            const isMe = row.playerId === myPlayerId
+            return (
               <div
-                className="reveal-fade-up d-200"
+                key={row.playerId}
+                className="reveal-fade-up"
                 style={{
-                  display: 'grid',
-                  gridTemplateColumns: gridTemplate,
-                  padding: '0 16px',
+                  transitionDelay: `${160 + rowIdx * 140}ms`,
+                  marginBottom: 10,
+                  background: isMe ? `rgba(8,8,8,0.96)` : 'rgba(8,8,8,0.92)',
+                  backdropFilter: 'blur(12px)',
+                  border: isMe
+                    ? `1px solid ${toRgba(row.colour, 0.4)}`
+                    : '1px solid rgba(250,255,254,0.08)',
+                  borderLeft: `4px solid ${row.colour}`,
+                  borderRadius: 12,
+                  overflow: 'hidden',
                 }}
               >
+                {/* Name row */}
                 <div
                   style={{
-                    padding: '0 12px 10px',
-                    fontSize: '0.60rem',
-                    fontWeight: 700,
-                    letterSpacing: '0.18em',
-                    textTransform: 'uppercase',
-                    color: 'transparent',
-                    userSelect: 'none',
+                    padding: '12px 14px 10px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 8,
+                    borderBottom: '1px solid rgba(250,255,254,0.07)',
+                    background: toRgba(row.colour, isMe ? 0.08 : 0.04),
                   }}
                 >
-                  Players
-                </div>
-                {Array.from({ length: totalRounds }, (_, i) => (
                   <div
-                    key={i}
                     style={{
-                      padding: '0 12px 10px',
-                      fontSize: '0.60rem',
-                      fontWeight: 700,
-                      letterSpacing: '0.18em',
-                      textTransform: 'uppercase',
-                      color: 'rgba(250,255,254,0.28)',
+                      width: 14,
+                      height: 14,
+                      borderRadius: '50%',
+                      background: row.colour,
+                      boxShadow: `0 0 8px ${toRgba(row.colour, 0.55)}`,
+                      flexShrink: 0,
+                    }}
+                  />
+                  <span
+                    style={{
+                      fontSize: isMe ? '0.90rem' : '0.85rem',
+                      fontWeight: 800,
+                      color: isMe ? '#fafffe' : 'rgba(250,255,254,0.85)',
+                      flex: 1,
                     }}
                   >
-                    {roundColHeader(i, totalRounds)}
+                    {row.displayName}
+                  </span>
+                  <div style={{ display: 'flex', gap: 4 }}>
+                    {row.isHost && (
+                      <span
+                        style={{
+                          fontSize: '0.48rem',
+                          fontWeight: 800,
+                          letterSpacing: '0.10em',
+                          textTransform: 'uppercase',
+                          padding: '2px 7px',
+                          borderRadius: 3,
+                          background: 'rgba(236,88,56,0.15)',
+                          border: '1px solid rgba(236,88,56,0.35)',
+                          color: '#ec5838',
+                        }}
+                      >
+                        Host
+                      </span>
+                    )}
+                    {isMe && (
+                      <span
+                        style={{
+                          fontSize: '0.48rem',
+                          fontWeight: 800,
+                          letterSpacing: '0.10em',
+                          textTransform: 'uppercase',
+                          padding: '2px 7px',
+                          borderRadius: 3,
+                          background: 'rgba(250,255,254,0.10)',
+                          border: '1px solid rgba(250,255,254,0.22)',
+                          color: 'rgba(250,255,254,0.70)',
+                        }}
+                      >
+                        You
+                      </span>
+                    )}
                   </div>
-                ))}
-              </div>
+                </div>
 
-              {/* Divider */}
-              <div
-                className="reveal-fade-up d-200"
-                style={{
-                  height: 1,
-                  background: 'rgba(250,255,254,0.10)',
-                  margin: '0 16px 4px',
-                }}
-              />
-
-              {/* Player rows */}
-              {rows.map((row, rowIdx) => {
-                const isMe = row.playerId === myPlayerId
-                return (
-                  <div
-                    key={row.playerId}
-                    className="reveal-fade-up"
-                    style={{
-                      transitionDelay: `${160 + rowIdx * 140}ms`,
-                      display: 'grid',
-                      gridTemplateColumns: gridTemplate,
-                      alignItems: 'stretch',
-                      position: 'relative',
-                      margin: '0 16px',
-                      borderLeft: `4px solid ${row.colour}`,
-                      borderBottom: '1px solid rgba(250,255,254,0.07)',
-                      background: isMe ? toRgba(row.colour, 0.06) : toRgba(row.colour, 0.03),
-                    }}
-                  >
-                    {/* Name cell */}
+                {/* Round rows */}
+                {Array.from({ length: totalRounds }, (_, i) => {
+                  const cell = row.rounds[i]
+                  const isChamp = cell?.itemId === champion.itemId
+                  return (
                     <div
+                      key={i}
                       style={{
-                        padding: '16px 12px 16px 10px',
                         display: 'flex',
-                        flexDirection: 'column',
-                        justifyContent: 'center',
-                        gap: 4,
+                        alignItems: 'center',
+                        padding: '9px 14px',
+                        borderBottom:
+                          i < totalRounds - 1 ? '1px solid rgba(250,255,254,0.05)' : undefined,
+                        background: isChamp ? 'rgba(236,88,56,0.08)' : undefined,
+                        position: 'relative',
                       }}
                     >
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      {isChamp && (
                         <div
                           style={{
-                            width: 12,
-                            height: 12,
-                            borderRadius: '50%',
-                            background: row.colour,
-                            boxShadow: `0 0 8px ${toRgba(row.colour, 0.5)}`,
-                            flexShrink: 0,
+                            position: 'absolute',
+                            left: 0,
+                            top: 6,
+                            bottom: 6,
+                            width: 2,
+                            background: '#ec5838',
+                            borderRadius: 1,
                           }}
                         />
-                        <span
-                          style={{
-                            fontSize: isMe ? '0.82rem' : '0.78rem',
-                            fontWeight: isMe ? 800 : 700,
-                            color: isMe ? '#fafffe' : 'rgba(250,255,254,0.80)',
-                            lineHeight: 1.2,
-                          }}
+                      )}
+                      {/* Round label */}
+                      <div
+                        style={{
+                          background: 'rgba(250,255,254,0.07)',
+                          border: '1px solid rgba(250,255,254,0.10)',
+                          borderRadius: 4,
+                          padding: '2px 7px',
+                          fontSize: '0.52rem',
+                          fontWeight: 700,
+                          letterSpacing: '0.12em',
+                          textTransform: 'uppercase',
+                          color: 'rgba(250,255,254,0.55)',
+                          minWidth: 44,
+                          textAlign: 'center',
+                          flexShrink: 0,
+                          marginRight: 10,
+                        }}
+                      >
+                        {roundColHeader(i, totalRounds)}
+                      </div>
+                      {/* Item title */}
+                      <span
+                        style={{
+                          fontSize: '0.82rem',
+                          fontWeight: isChamp ? 700 : 500,
+                          color: isChamp ? '#fafffe' : 'rgba(250,255,254,0.60)',
+                          flex: 1,
+                        }}
+                      >
+                        {cell ? cell.title : '—'}
+                      </span>
+                      {/* Champion star */}
+                      {isChamp && (
+                        <svg
+                          width="12"
+                          height="12"
+                          viewBox="0 0 24 24"
+                          fill="#ec5838"
+                          style={{ flexShrink: 0, marginLeft: 6 }}
                         >
-                          {row.displayName}
-                        </span>
-                      </div>
-                      <div style={{ display: 'flex', gap: 4 }}>
-                        {row.isHost && (
-                          <span
-                            style={{
-                              fontSize: '0.46rem',
-                              fontWeight: 800,
-                              letterSpacing: '0.10em',
-                              textTransform: 'uppercase',
-                              padding: '2px 6px',
-                              borderRadius: 3,
-                              background: 'rgba(236,88,56,0.13)',
-                              border: '1px solid rgba(236,88,56,0.30)',
-                              color: '#ec5838',
-                            }}
-                          >
-                            Host
-                          </span>
-                        )}
-                        {isMe && (
-                          <span
-                            style={{
-                              fontSize: '0.46rem',
-                              fontWeight: 800,
-                              letterSpacing: '0.10em',
-                              textTransform: 'uppercase',
-                              padding: '2px 6px',
-                              borderRadius: 3,
-                              background: 'rgba(250,255,254,0.08)',
-                              border: '1px solid rgba(250,255,254,0.18)',
-                              color: 'rgba(250,255,254,0.55)',
-                            }}
-                          >
-                            You
-                          </span>
-                        )}
-                      </div>
+                          <path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 17.3l-6.2 4.3 2.4-7.4L2 9.4h7.6z" />
+                        </svg>
+                      )}
                     </div>
-
-                    {/* Round cells */}
-                    {Array.from({ length: totalRounds }, (_, i) => {
-                      const cell = row.rounds[i]
-                      const isChamp = cell?.itemId === champion.itemId
-                      return (
-                        <div
-                          key={i}
-                          style={{
-                            position: 'relative',
-                            padding: '16px 12px',
-                            display: 'flex',
-                            alignItems: 'center',
-                            fontSize: '0.78rem',
-                            fontWeight: 600,
-                            color: isChamp ? 'rgba(250,255,254,0.88)' : 'rgba(250,255,254,0.45)',
-                            borderLeft: '1px solid rgba(250,255,254,0.05)',
-                            background: isChamp ? 'rgba(236,88,56,0.08)' : undefined,
-                          }}
-                        >
-                          {isChamp && (
-                            <div
-                              style={{
-                                position: 'absolute',
-                                left: 0,
-                                top: 10,
-                                bottom: 10,
-                                width: 2,
-                                background: 'rgba(236,88,56,0.62)',
-                                borderRadius: 1,
-                              }}
-                            />
-                          )}
-                          {cell ? cell.title : '—'}
-                        </div>
-                      )
-                    })}
-                  </div>
-                )
-              })}
-            </div>
-          </div>
+                  )
+                })}
+              </div>
+            )
+          })}
         </div>
       </div>
     </div>

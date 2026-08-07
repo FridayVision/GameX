@@ -327,6 +327,9 @@ export default function RoomPage() {
         />
       )
     }
+    const myPlayer = session
+      ? roomState.players.find((p) => p.playerId === session.playerId)
+      : undefined
     return (
       <PlayerChampionScreen
         champion={roomState.champion}
@@ -334,6 +337,8 @@ export default function RoomPage() {
         totalRounds={roomState.totalRounds ?? 4}
         isHost={session?.isHost ?? false}
         onReveal={triggerReveal}
+        playerName={myPlayer?.displayName}
+        playerColour={myPlayer?.colour}
       />
     )
   }
