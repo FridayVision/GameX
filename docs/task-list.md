@@ -1,6 +1,6 @@
 # GameX — Dev Task List
 
-Generated: 2026-07-27 | Last updated: 2026-08-07 (M8 pre-flight fixes complete)
+Generated: 2026-07-27 | Last updated: 2026-08-07 (M8 env & config complete)
 Tech stack: Next.js 16 + Socket.IO 4 + TypeScript 6 + Tailwind 4
 Default config: 4 players, 16 items | Hosting: Railway (custom server)
 
@@ -178,9 +178,9 @@ _Note: Vercel is not compatible with this stack — Socket.IO requires a persist
 
 ### Environment & config
 
-- [ ] Create `.env.example` with all required keys: `TMDB_API_KEY`, `REDDIT_CLIENT_ID`, `REDDIT_CLIENT_SECRET`, `BRAVE_API_KEY` (optional)
-- [ ] Verify `server.ts` reads `PORT` from `process.env.PORT` (Railway injects this)
-- [ ] Add `python3` availability check on server start — log warning if missing so pool generation failure is obvious
+- [x] Create `.env.example` — `TMDB_API_KEY` (required), `GEMINI_API_KEY` (optional), `BRAVE_SEARCH_API_KEY` (optional); Reddit uses public API, no credentials needed
+- [x] Verify `server.ts` reads `PORT` from `process.env.PORT` — already correct (`process.env.PORT ?? '3000'`), no change needed
+- [x] Add `python3` availability check on server start — `spawnSync('python3', ['--version'])` logs version or WARNING on startup
 
 ### Railway setup
 
