@@ -58,6 +58,7 @@ export function createRoom(config: RoomConfig): RoomState {
     currentRound: 0,
     currentMatchIndex: 0,
     disconnectedPlayers: new Map(),
+    champion: null,
   }
 
   getRooms().set(roomId, room)

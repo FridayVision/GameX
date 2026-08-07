@@ -326,3 +326,34 @@ body {
 .anim-coin-spin-3d {
   animation: coin-spin-3d 1.4s cubic-bezier(0.22, 1, 0.36, 1) forwards;
 }
+
+/* ── Champion screen ── */
+@keyframes champ-pulse {
+  0%,
+  100% {
+    box-shadow:
+      0 0 0 2px #ec5838,
+      0 0 40px rgba(236, 88, 56, 0.5),
+      0 0 100px rgba(236, 88, 56, 0.22),
+      0 28px 55px -10px rgba(0, 0, 0, 0.85);
+  }
+  50% {
+    box-shadow:
+      0 0 0 2px #ec5838,
+      0 0 70px rgba(236, 88, 56, 0.8),
+      0 0 160px rgba(236, 88, 56, 0.38),
+      0 28px 55px -10px rgba(0, 0, 0, 0.85);
+  }
+}
+
+@keyframes spotlight-breathe {
+  0%,
+  100% {
+    opacity: 0.7;
+    transform: translateX(-50%) scale(1);
+  }
+  50% {
+    opacity: 1;
+    transform: translateX(-50%) scale(1.08);
+  }
+}

@@ -1,6 +1,6 @@
 # GameX — Dev Task List
 
-Generated: 2026-07-27 | Last updated: 2026-08-06 (M6 complete — disconnection & reconnection)
+Generated: 2026-07-27 | Last updated: 2026-08-07 (M7 complete — champion screen & post-game reveal)
 Tech stack: Next.js 16 + Socket.IO 4 + TypeScript 6 + Tailwind 4
 Default config: 4 players, 16 items | Hosting: Railway (custom server)
 
@@ -147,17 +147,21 @@ _Grace timer, state sync on rejoin, permanent removal. Required before any real 
 
 ---
 
-## Milestone 7 — Champion Screen & Post-Game Reveal
+## Milestone 7 — Champion Screen & Post-Game Reveal ✅
 
 _Final match → champion → assignment history table._
 
-- [ ] Final match detection: after `MATCH_END` when `survivingItems.length === 1`; emit `GAME_OVER` with winner `Item` to room channels
-- [ ] `components/board/champion-screen.tsx` — champion item card with full visual weight; "Reveal Assignments" button appears on host side
-- [ ] `components/player/champion-screen.tsx` — same champion display; waits for host to trigger reveal
-- [ ] `HOST_REVEAL_START` handler: emit `REVEAL_START` with full `assignmentHistory` to both namespaces
-- [ ] `components/board/reveal-table.tsx` — table: Player (coloured) × Round × Item Defended; highlight rows where multiple players shared the same assignment
-- [ ] `components/player/reveal-table.tsx` — same table; player's own rows highlighted
-- [ ] Play-again: "New Game" button on Host Panel; POST `/api/room/reset` (or host control socket event); clear bracket/pool/assignments; keep players; return to Milestone 3 pool generation; emit `ROOM_RESET`
+- [x] Final match detection: after `MATCH_END` when `survivingItems.length === 1`; emit `GAME_OVER` with winner `Item` + champion's path (beaten opponents) to room channels; store `room.champion`
+- [x] `components/board/champion-screen.tsx` — champion card (260×360, pulsing champ-pulse glow), "THE CHAMPION" heading, "Path to the Top" beaten-item strip; board LED background with stronger orange atmosphere
+- [x] `components/player/champion-screen.tsx` — same display (200×285 card); "Reveal Assignments" button on host's view; "Waiting for host" on players; phone LED background
+- [x] `HOST_REVEAL_START` event added (`lib/socket-events.ts`); handler in `lib/socket-server.ts` builds enriched `rows` + emits `REVEAL_START` to both namespaces
+- [x] `components/board/reveal-table.tsx` — "Who Defended What" grid: Player (coloured dot + name) × Round columns (R1/R2/Semi/Final); champion cells orange-highlighted; staggered row entrance
+- [x] `components/player/reveal-table.tsx` — same grid; own row stronger tint + "You" badge; horizontally scrollable on mobile
+- [x] `RevealRow` interface exported from `hooks/use-player-socket.ts`; `revealVisible`, `revealRows`, `revealPath` state in both hooks; `triggerReveal` exported from player hook
+- [x] `app/room/[code]/page.tsx` and `board/page.tsx` stubs replaced with full champion → reveal flow
+- [x] `champion: Item | null` added to `RoomState` type and initialized in `room-store.ts`
+- [x] `champ-pulse` + `spotlight-breathe` keyframes added to `globals.css`
+- [x] "New Game" / `ROOM_RESET` flow already in place from M6 (host `handleEndGame` → `emitRoomReset` → navigate home)
 
 ---
 

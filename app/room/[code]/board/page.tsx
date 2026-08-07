@@ -7,6 +7,8 @@ import { BoardPoolProgress } from '@/components/board/pool-progress'
 import { RoundStartScreen } from '@/components/board/round-start-screen'
 import { BoardMatchView } from '@/components/board/match-view'
 import { useBoardSocket } from '@/hooks/use-board-socket'
+import { BoardChampionScreen } from '@/components/board/champion-screen'
+import { BoardRevealTable } from '@/components/board/reveal-table'
 import type { BracketSize } from '@/types/room.types'
 
 export default function BoardPage() {
@@ -91,41 +93,23 @@ export default function BoardPage() {
     )
   }
 
-  // Game over — hold at champion state until M7
-  if (roomState.gameOver) {
+  // Game over — champion screen → host-triggered reveal table
+  if (roomState.gameOver && roomState.champion) {
+    if (roomState.revealVisible && roomState.revealRows) {
+      return (
+        <BoardRevealTable
+          rows={roomState.revealRows}
+          champion={roomState.champion}
+          totalRounds={roomState.totalRounds ?? 4}
+        />
+      )
+    }
     return (
-      <div className="h-screen flex flex-col items-center justify-center">
-        <LedBackground />
-        <div className="relative z-10 text-center px-8">
-          <p
-            style={{
-              fontSize: '0.72rem',
-              color: 'rgba(250,255,254,0.40)',
-              letterSpacing: '0.22em',
-              textTransform: 'uppercase',
-              marginBottom: 12,
-            }}
-          >
-            Champion
-          </p>
-          <h1
-            style={{
-              fontSize: '4rem',
-              fontWeight: 900,
-              color: '#fafffe',
-              letterSpacing: '-0.04em',
-              lineHeight: 1,
-            }}
-          >
-            {roomState.champion?.title ?? 'Game Over'}
-          </h1>
-          {roomState.champion?.contextLine && (
-            <p style={{ fontSize: '1rem', color: 'rgba(250,255,254,0.45)', marginTop: 12 }}>
-              {roomState.champion.contextLine}
-            </p>
-          )}
-        </div>
-      </div>
+      <BoardChampionScreen
+        champion={roomState.champion}
+        path={roomState.revealPath ?? []}
+        totalRounds={roomState.totalRounds ?? 4}
+      />
     )
   }
 

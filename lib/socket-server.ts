@@ -352,8 +352,23 @@ export function initSocketServer(httpServer: HTTPServer): void {
       if (survivors.length === 1) {
         // Game over
         room.status = 'ended'
-        board.to(roomId).emit(EVENTS.GAME_OVER, { champion: survivors[0] })
-        player.to(roomId).emit(EVENTS.GAME_OVER, { champion: survivors[0] })
+        const champion = survivors[0]
+        room.champion = champion
+
+        // Build champion's path — one beaten item per round
+        const totalRoundsForPath = Math.log2(room.bracketSize)
+        const champPath = Array.from({ length: totalRoundsForPath }, (_, i) => {
+          const m = room.matchHistory.find(
+            (r) =>
+              r.roundIndex === i && (r.itemAId === champion.itemId || r.itemBId === champion.itemId)
+          )
+          if (!m) return null
+          const loserId = m.itemAId === champion.itemId ? m.itemBId : m.itemAId
+          return room.lockedItems.find((it) => it.itemId === loserId) ?? null
+        }).filter((it): it is NonNullable<typeof it> => it !== null)
+
+        board.to(roomId).emit(EVENTS.GAME_OVER, { champion, path: champPath })
+        player.to(roomId).emit(EVENTS.GAME_OVER, { champion, path: champPath })
         return
       }
 
@@ -520,6 +535,38 @@ export function initSocketServer(httpServer: HTTPServer): void {
       if (playerState.playerId !== room.hostId) return
       board.to(roomId).emit(EVENTS.ROOM_RESET)
       player.to(roomId).emit(EVENTS.ROOM_RESET)
+    })
+
+    socket.on(EVENTS.HOST_REVEAL_START, () => {
+      if (playerState.playerId !== room.hostId) return
+      if (!room.champion) return
+
+      const totalRounds = Math.log2(room.bracketSize)
+
+      // Build enriched assignment rows — include all players who have any assignment record
+      const rows = [...room.players.values()]
+        .filter(
+          (p) =>
+            p.status !== 'removed' || room.assignmentHistory.some((r) => r.playerId === p.playerId)
+        )
+        .map((p) => ({
+          playerId: p.playerId,
+          displayName: p.displayName,
+          colour: p.colour,
+          isHost: p.isHost,
+          rounds: Array.from({ length: totalRounds }, (_, i) => {
+            const record = room.assignmentHistory.find(
+              (r) => r.playerId === p.playerId && r.roundIndex === i
+            )
+            if (!record) return null
+            const item = room.lockedItems.find((it) => it.itemId === record.itemId)
+            return item ? { itemId: item.itemId, title: item.title, imageUrl: item.imageUrl } : null
+          }),
+        }))
+
+      const payload = { rows, totalRounds }
+      board.to(roomId).emit(EVENTS.REVEAL_START, payload)
+      player.to(roomId).emit(EVENTS.REVEAL_START, payload)
     })
 
     socket.on('disconnect', () => {

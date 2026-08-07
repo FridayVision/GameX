@@ -21,6 +21,14 @@ export interface TimedOutPlayer {
   colour: string
 }
 
+export interface RevealRow {
+  playerId: string
+  displayName: string
+  colour: string
+  isHost: boolean
+  rounds: Array<{ itemId: string; title: string; imageUrl: string | null } | null>
+}
+
 export interface PlayerRoomState {
   players: PlayerPublicState[]
   status: RoomStatus
@@ -53,6 +61,10 @@ export interface PlayerRoomState {
   hostAbandoned: boolean
   allPlayersLeft: boolean
   gameEnded: boolean
+  // Post-game reveal
+  revealVisible: boolean
+  revealRows: RevealRow[] | null
+  revealPath: Item[] | null
 }
 
 export function usePlayerSocket(roomId: string | null, playerToken: string | null) {
@@ -89,6 +101,9 @@ export function usePlayerSocket(roomId: string | null, playerToken: string | nul
     hostAbandoned: false,
     allPlayersLeft: false,
     gameEnded: false,
+    revealVisible: false,
+    revealRows: null,
+    revealPath: null,
   })
 
   useEffect(() => {
@@ -262,8 +277,21 @@ export function usePlayerSocket(roomId: string | null, playerToken: string | nul
         }))
       }
     )
-    socket.on(EVENTS.GAME_OVER, (data: { champion: Item }) => {
-      setRoomState((prev) => ({ ...prev, gameOver: true, champion: data.champion }))
+    socket.on(EVENTS.GAME_OVER, (data: { champion: Item; path?: Item[] }) => {
+      setRoomState((prev) => ({
+        ...prev,
+        gameOver: true,
+        champion: data.champion,
+        revealPath: data.path ?? null,
+      }))
+    })
+    socket.on(EVENTS.REVEAL_START, (data: { rows: RevealRow[]; totalRounds: number }) => {
+      setRoomState((prev) => ({
+        ...prev,
+        revealVisible: true,
+        revealRows: data.rows,
+        totalRounds: data.totalRounds,
+      }))
     })
 
     return () => {
@@ -307,6 +335,10 @@ export function usePlayerSocket(roomId: string | null, playerToken: string | nul
     socketRef.current?.emit(EVENTS.ROOM_RESET)
   }, [])
 
+  const triggerReveal = useCallback(() => {
+    socketRef.current?.emit(EVENTS.HOST_REVEAL_START)
+  }, [])
+
   return {
     connected,
     roomState,
@@ -317,5 +349,6 @@ export function usePlayerSocket(roomId: string | null, playerToken: string | nul
     nextMatch,
     proceedAnyway,
     emitRoomReset,
+    triggerReveal,
   }
 }

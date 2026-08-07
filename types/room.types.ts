@@ -29,4 +29,5 @@ export interface RoomState {
   currentRound: number
   currentMatchIndex: number
   disconnectedPlayers: Map<string, DisconnectedPlayer>
+  champion: Item | null
 }

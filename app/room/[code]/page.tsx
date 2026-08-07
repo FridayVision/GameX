@@ -8,6 +8,8 @@ import { AssignmentCard } from '@/components/player/assignment-card'
 import { PlayerMatchView } from '@/components/player/match-view'
 import { HostMatchControls } from '@/components/host/match-controls'
 import { usePlayerSocket } from '@/hooks/use-player-socket'
+import { PlayerChampionScreen } from '@/components/player/champion-screen'
+import { PlayerRevealTable } from '@/components/player/reveal-table'
 import type { BracketSize } from '@/types/room.types'
 
 interface SessionState {
@@ -60,6 +62,7 @@ export default function RoomPage() {
     nextMatch,
     proceedAnyway,
     emitRoomReset,
+    triggerReveal,
   } = usePlayerSocket(session?.roomId ?? null, session?.playerToken ?? null)
 
   const handleEndGame = useCallback(() => {
@@ -312,38 +315,26 @@ export default function RoomPage() {
     )
   }
 
-  // Game over — hold at current view until M7 champion screen
-  if (roomState.gameOver) {
+  // Game over — champion screen → host-triggered reveal table
+  if (roomState.gameOver && roomState.champion) {
+    if (roomState.revealVisible && roomState.revealRows && session) {
+      return (
+        <PlayerRevealTable
+          rows={roomState.revealRows}
+          champion={roomState.champion}
+          totalRounds={roomState.totalRounds ?? 4}
+          myPlayerId={session.playerId}
+        />
+      )
+    }
     return (
-      <div className="h-[100dvh] flex flex-col items-center justify-center px-6 text-center gap-3">
-        <LedBackground />
-        <div className="relative z-10 flex flex-col items-center gap-3">
-          <p
-            style={{
-              fontSize: '0.70rem',
-              color: 'rgba(250,255,254,0.45)',
-              letterSpacing: '0.22em',
-              textTransform: 'uppercase',
-              fontWeight: 700,
-            }}
-          >
-            Champion
-          </p>
-          <h1
-            style={{
-              fontSize: '2rem',
-              fontWeight: 900,
-              color: '#fafffe',
-              letterSpacing: '-0.03em',
-            }}
-          >
-            {roomState.champion?.title ?? 'Game Over'}
-          </h1>
-          <p style={{ fontSize: '0.72rem', color: 'rgba(250,255,254,0.35)' }}>
-            Reveal screen coming in the next build
-          </p>
-        </div>
-      </div>
+      <PlayerChampionScreen
+        champion={roomState.champion}
+        path={roomState.revealPath ?? []}
+        totalRounds={roomState.totalRounds ?? 4}
+        isHost={session?.isHost ?? false}
+        onReveal={triggerReveal}
+      />
     )
   }
 

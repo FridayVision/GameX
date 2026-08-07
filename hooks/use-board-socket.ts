@@ -6,6 +6,7 @@ import type { Item } from '@/types/item.types'
 import type { RoomStatus, BracketSize } from '@/types/room.types'
 import type { MatchPublic as MatchPublicFull } from '@/types/match.types'
 import { EVENTS } from '@/lib/socket-events'
+import type { RevealRow } from './use-player-socket'
 
 // Minimal match shape for the round-level match list (used in RoundStartScreen)
 export interface MatchPublic {
@@ -47,7 +48,13 @@ export interface BoardRoomState {
   gamePaused: boolean
   hostAbandoned: boolean
   roomReset: boolean
+  // Post-game reveal
+  revealVisible: boolean
+  revealRows: RevealRow[] | null
+  revealPath: Item[] | null
 }
+
+export type { RevealRow }
 
 export function useBoardSocket(roomCode: string | null) {
   const socketRef = useRef<Socket | null>(null)
@@ -76,6 +83,9 @@ export function useBoardSocket(roomCode: string | null) {
     gamePaused: false,
     hostAbandoned: false,
     roomReset: false,
+    revealVisible: false,
+    revealRows: null,
+    revealPath: null,
   })
 
   useEffect(() => {
@@ -230,8 +240,21 @@ export function useBoardSocket(roomCode: string | null) {
         }))
       }
     )
-    socket.on(EVENTS.GAME_OVER, (data: { champion: Item }) => {
-      setRoomState((prev) => ({ ...prev, gameOver: true, champion: data.champion }))
+    socket.on(EVENTS.GAME_OVER, (data: { champion: Item; path?: Item[] }) => {
+      setRoomState((prev) => ({
+        ...prev,
+        gameOver: true,
+        champion: data.champion,
+        revealPath: data.path ?? null,
+      }))
+    })
+    socket.on(EVENTS.REVEAL_START, (data: { rows: RevealRow[]; totalRounds: number }) => {
+      setRoomState((prev) => ({
+        ...prev,
+        revealVisible: true,
+        revealRows: data.rows,
+        totalRounds: data.totalRounds,
+      }))
     })
 
     return () => {
