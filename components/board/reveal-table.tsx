@@ -23,7 +23,8 @@ export function BoardRevealTable({ rows, champion, totalRounds }: BoardRevealTab
     requestAnimationFrame(() => setTimeout(() => setLoaded(true), 80))
   }, [])
 
-  const gridTemplate = `260px repeat(${totalRounds}, 1fr)`
+  // Name col wider for TV; equal round cols for the rest
+  const gridTemplate = `280px repeat(${totalRounds}, 1fr)`
 
   return (
     <div
@@ -39,18 +40,18 @@ export function BoardRevealTable({ rows, champion, totalRounds }: BoardRevealTab
       {/* Content */}
       <div
         className="relative z-10 w-full h-full flex flex-col"
-        style={{ padding: '48px 80px 40px' }}
+        style={{ padding: '44px 72px 36px' }}
       >
         {/* Header */}
         <header
           className="flex items-center justify-between flex-shrink-0"
-          style={{ marginBottom: 32, gap: 24 }}
+          style={{ marginBottom: 28, gap: 24 }}
         >
           {/* Title */}
           <div
             className="reveal-fade-up d-100"
             style={{
-              background: 'rgba(6,10,5,0.82)',
+              background: 'rgba(6,10,5,0.88)',
               backdropFilter: 'blur(14px)',
               border: '1px solid rgba(250,255,254,0.10)',
               borderRadius: 14,
@@ -64,7 +65,7 @@ export function BoardRevealTable({ rows, champion, totalRounds }: BoardRevealTab
                 fontWeight: 700,
                 letterSpacing: '0.22em',
                 textTransform: 'uppercase',
-                color: 'rgba(250,255,254,0.30)',
+                color: 'rgba(250,255,254,0.35)',
                 margin: '0 0 5px',
               }}
             >
@@ -72,7 +73,7 @@ export function BoardRevealTable({ rows, champion, totalRounds }: BoardRevealTab
             </p>
             <h1
               style={{
-                fontSize: '2.80rem',
+                fontSize: '2.60rem',
                 fontWeight: 900,
                 letterSpacing: '-0.01em',
                 textTransform: 'uppercase',
@@ -91,19 +92,19 @@ export function BoardRevealTable({ rows, champion, totalRounds }: BoardRevealTab
             style={{
               display: 'flex',
               alignItems: 'center',
-              gap: 12,
-              background: 'rgba(6,10,5,0.82)',
+              gap: 14,
+              background: 'rgba(6,10,5,0.88)',
               backdropFilter: 'blur(14px)',
-              border: '1px solid rgba(250,255,254,0.10)',
+              border: '1px solid rgba(236,88,56,0.25)',
               borderRadius: 14,
-              padding: '18px 24px',
+              padding: '18px 26px',
               boxShadow: '0 0 0 1px rgba(0,0,0,.70), 0 8px 32px rgba(0,0,0,.55)',
               flexShrink: 0,
             }}
           >
             <svg
-              width="16"
-              height="16"
+              width="20"
+              height="20"
               viewBox="0 0 24 24"
               fill="#ec5838"
               style={{ flexShrink: 0 }}
@@ -113,29 +114,29 @@ export function BoardRevealTable({ rows, champion, totalRounds }: BoardRevealTab
             <div>
               <p
                 style={{
-                  fontSize: '0.60rem',
+                  fontSize: '0.65rem',
                   fontWeight: 700,
                   letterSpacing: '0.18em',
                   textTransform: 'uppercase',
-                  color: 'rgba(250,255,254,0.30)',
-                  margin: '0 0 2px',
+                  color: 'rgba(250,255,254,0.35)',
+                  margin: '0 0 3px',
                 }}
               >
                 Champion
               </p>
-              <p style={{ fontSize: '1.10rem', fontWeight: 700, color: '#ec5838', margin: 0 }}>
+              <p style={{ fontSize: '1.20rem', fontWeight: 800, color: '#ec5838', margin: 0 }}>
                 {champion.title}
               </p>
             </div>
           </div>
         </header>
 
-        {/* Table — solid dark card so LED dots don't bleed through */}
+        {/* Table — solid dark card */}
         <div
           className="flex-1 flex flex-col min-h-0 reveal-fade-up d-200"
           style={{
-            background: 'rgba(4,8,3,0.92)',
-            backdropFilter: 'blur(12px)',
+            background: 'rgba(4,8,3,0.94)',
+            backdropFilter: 'blur(16px)',
             border: '1px solid rgba(250,255,254,0.09)',
             borderRadius: 16,
             overflow: 'hidden',
@@ -145,8 +146,8 @@ export function BoardRevealTable({ rows, champion, totalRounds }: BoardRevealTab
           <div style={{ display: 'grid', gridTemplateColumns: gridTemplate }}>
             <div
               style={{
-                padding: '18px 24px 14px',
-                fontSize: '0.72rem',
+                padding: '20px 28px 16px',
+                fontSize: '0.78rem',
                 fontWeight: 700,
                 letterSpacing: '0.20em',
                 textTransform: 'uppercase',
@@ -160,21 +161,25 @@ export function BoardRevealTable({ rows, champion, totalRounds }: BoardRevealTab
               <div
                 key={i}
                 style={{
-                  padding: '18px 28px 14px',
-                  fontSize: '0.72rem',
+                  padding: '20px 32px 16px',
+                  fontSize: '0.78rem',
                   fontWeight: 700,
                   letterSpacing: '0.20em',
                   textTransform: 'uppercase',
-                  color: 'rgba(250,255,254,0.50)',
+                  color: 'rgba(250,255,254,0.45)',
+                  display: 'flex',
+                  justifyContent: 'center',
+                  gap: 8,
                 }}
               >
+                <span style={{ width: 22, flexShrink: 0 }} />
                 {roundColHeader(i, totalRounds)}
               </div>
             ))}
           </div>
 
           {/* Divider */}
-          <div style={{ height: 1, background: 'rgba(250,255,254,0.10)', marginBottom: 4 }} />
+          <div style={{ height: 1, background: 'rgba(250,255,254,0.10)' }} />
 
           {/* Player rows */}
           {rows.map((row, rowIdx) => (
@@ -191,12 +196,12 @@ export function BoardRevealTable({ rows, champion, totalRounds }: BoardRevealTab
                 borderBottom: '1px solid rgba(250,255,254,0.07)',
               }}
             >
-              {/* Faint row tint */}
+              {/* Row colour tint — slightly more solid for TV readability */}
               <div
                 style={{
                   position: 'absolute',
                   inset: 0,
-                  background: toRgba(row.colour, 0.04),
+                  background: toRgba(row.colour, 0.07),
                   pointerEvents: 'none',
                   zIndex: 0,
                 }}
@@ -207,36 +212,36 @@ export function BoardRevealTable({ rows, champion, totalRounds }: BoardRevealTab
                 style={{
                   position: 'relative',
                   zIndex: 1,
-                  padding: '24px 24px 24px 20px',
+                  padding: '28px 28px 28px 24px',
                   display: 'flex',
                   alignItems: 'center',
-                  gap: 13,
+                  gap: 16,
                 }}
               >
                 <div
                   style={{
-                    width: 18,
-                    height: 18,
+                    width: 24,
+                    height: 24,
                     borderRadius: '50%',
                     background: row.colour,
-                    boxShadow: `0 0 10px ${toRgba(row.colour, 0.5)}`,
+                    boxShadow: `0 0 12px ${toRgba(row.colour, 0.55)}`,
                     flexShrink: 0,
                   }}
                 />
                 <span
-                  style={{ fontSize: '1.10rem', fontWeight: 700, color: 'rgba(250,255,254,0.92)' }}
+                  style={{ fontSize: '1.30rem', fontWeight: 700, color: 'rgba(250,255,254,0.94)' }}
                 >
                   {row.displayName}
                 </span>
                 {row.isHost && (
                   <span
                     style={{
-                      fontSize: '0.52rem',
+                      fontSize: '0.56rem',
                       fontWeight: 800,
                       letterSpacing: '0.12em',
                       textTransform: 'uppercase',
-                      padding: '2px 7px',
-                      borderRadius: 3,
+                      padding: '3px 9px',
+                      borderRadius: 4,
                       background: 'rgba(236,88,56,0.13)',
                       border: '1px solid rgba(236,88,56,0.30)',
                       color: '#ec5838',
@@ -257,29 +262,33 @@ export function BoardRevealTable({ rows, champion, totalRounds }: BoardRevealTab
                     style={{
                       position: 'relative',
                       zIndex: 1,
-                      padding: '24px 28px',
+                      padding: '28px 32px',
                       display: 'flex',
                       alignItems: 'center',
-                      fontSize: '0.95rem',
-                      fontWeight: 600,
-                      color: isChamp ? '#fafffe' : 'rgba(250,255,254,0.60)',
+                      justifyContent: 'center',
+                      gap: 8,
+                      fontSize: '1.10rem',
+                      fontWeight: isChamp ? 700 : 500,
+                      color: isChamp ? '#fafffe' : 'rgba(250,255,254,0.55)',
                       borderLeft: '1px solid rgba(250,255,254,0.07)',
-                      background: isChamp ? 'rgba(236,88,56,0.10)' : undefined,
+                      textAlign: 'center',
                     }}
                   >
-                    {isChamp && (
-                      <div
-                        style={{
-                          position: 'absolute',
-                          left: 0,
-                          top: 14,
-                          bottom: 14,
-                          width: 3,
-                          background: '#ec5838',
-                          borderRadius: 1,
-                        }}
-                      />
-                    )}
+                    {/* Fixed-width star slot — always reserved so text stays aligned */}
+                    <span
+                      style={{
+                        width: 22,
+                        flexShrink: 0,
+                        display: 'flex',
+                        justifyContent: 'center',
+                      }}
+                    >
+                      {isChamp && (
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="#ec5838">
+                          <path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 17.3l-6.2 4.3 2.4-7.4L2 9.4h7.6z" />
+                        </svg>
+                      )}
+                    </span>
                     {cell ? cell.title : '—'}
                   </div>
                 )

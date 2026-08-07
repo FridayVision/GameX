@@ -135,9 +135,11 @@ export function PlayerRevealTable({
                   background: isMe ? `rgba(8,8,8,0.96)` : 'rgba(8,8,8,0.92)',
                   backdropFilter: 'blur(12px)',
                   border: isMe
-                    ? `1px solid ${toRgba(row.colour, 0.4)}`
+                    ? `1px solid ${toRgba(row.colour, 0.45)}`
                     : '1px solid rgba(250,255,254,0.08)',
-                  borderLeft: `4px solid ${row.colour}`,
+                  boxShadow: isMe
+                    ? `0 0 18px ${toRgba(row.colour, 0.2)}, 0 0 6px ${toRgba(row.colour, 0.12)}`
+                    : undefined,
                   borderRadius: 12,
                   overflow: 'hidden',
                 }}
@@ -224,23 +226,9 @@ export function PlayerRevealTable({
                         padding: '9px 14px',
                         borderBottom:
                           i < totalRounds - 1 ? '1px solid rgba(250,255,254,0.05)' : undefined,
-                        background: isChamp ? 'rgba(236,88,56,0.08)' : undefined,
                         position: 'relative',
                       }}
                     >
-                      {isChamp && (
-                        <div
-                          style={{
-                            position: 'absolute',
-                            left: 0,
-                            top: 6,
-                            bottom: 6,
-                            width: 2,
-                            background: '#ec5838',
-                            borderRadius: 1,
-                          }}
-                        />
-                      )}
                       {/* Round label */}
                       <div
                         style={{
@@ -261,29 +249,29 @@ export function PlayerRevealTable({
                       >
                         {roundColHeader(i, totalRounds)}
                       </div>
-                      {/* Item title */}
-                      <span
-                        style={{
-                          fontSize: '0.82rem',
-                          fontWeight: isChamp ? 700 : 500,
-                          color: isChamp ? '#fafffe' : 'rgba(250,255,254,0.60)',
-                          flex: 1,
-                        }}
-                      >
-                        {cell ? cell.title : '—'}
-                      </span>
-                      {/* Champion star */}
-                      {isChamp && (
-                        <svg
-                          width="12"
-                          height="12"
-                          viewBox="0 0 24 24"
-                          fill="#ec5838"
-                          style={{ flexShrink: 0, marginLeft: 6 }}
+                      {/* Champion star + item title inline */}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 5, flex: 1 }}>
+                        {isChamp && (
+                          <svg
+                            width="11"
+                            height="11"
+                            viewBox="0 0 24 24"
+                            fill="#ec5838"
+                            style={{ flexShrink: 0 }}
+                          >
+                            <path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 17.3l-6.2 4.3 2.4-7.4L2 9.4h7.6z" />
+                          </svg>
+                        )}
+                        <span
+                          style={{
+                            fontSize: '0.82rem',
+                            fontWeight: isChamp ? 700 : 500,
+                            color: isChamp ? '#fafffe' : 'rgba(250,255,254,0.60)',
+                          }}
                         >
-                          <path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 17.3l-6.2 4.3 2.4-7.4L2 9.4h7.6z" />
-                        </svg>
-                      )}
+                          {cell ? cell.title : '—'}
+                        </span>
+                      </div>
                     </div>
                   )
                 })}
