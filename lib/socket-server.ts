@@ -1,7 +1,7 @@
 import { Server } from 'socket.io'
 import type { Server as HTTPServer } from 'http'
 import { EVENTS } from './socket-events'
-import { getRoom, getRoomByCode } from './room-store'
+import { getRoom, getRoomByCode, startRoomSweep } from './room-store'
 import { findPlayerByToken, toPublicState } from './auth'
 import { drawRound, runAssignment } from './bracket-engine'
 import type { AssignmentPayload } from '@/types/assignment.types'
@@ -72,6 +72,8 @@ export function initSocketServer(httpServer: HTTPServer): void {
   })
   ;(process as ProcessWithIO).__socketIO = io
 
+  startRoomSweep()
+
   const board = io.of('/board')
   const player = io.of('/player')
 
@@ -84,6 +86,7 @@ export function initSocketServer(httpServer: HTTPServer): void {
 
     const room = getRoomByCode(roomCode)
     if (!room) {
+      socket.emit(EVENTS.ROOM_NOT_FOUND)
       socket.disconnect(true)
       return
     }
@@ -138,6 +141,7 @@ export function initSocketServer(httpServer: HTTPServer): void {
     const room = getRoom(roomId)
     const playerState = room ? findPlayerByToken(roomId, playerToken) : undefined
     if (!room || !playerState) {
+      socket.emit(EVENTS.ROOM_NOT_FOUND)
       socket.disconnect(true)
       return
     }

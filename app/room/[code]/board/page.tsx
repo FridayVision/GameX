@@ -24,6 +24,11 @@ export default function BoardPage() {
     if (roomState.roomReset) router.replace('/')
   }, [roomState.roomReset, router])
 
+  // Room not found (server restarted) — redirect home
+  useEffect(() => {
+    if (roomState.roomNotFound) router.replace('/')
+  }, [roomState.roomNotFound, router])
+
   const showPool =
     (roomState.status === 'poolgen' || roomState.status === 'poolreview') && !roomState.poolReady
       ? false

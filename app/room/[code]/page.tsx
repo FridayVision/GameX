@@ -129,6 +129,17 @@ export default function RoomPage() {
   const bracketSize = (roomState.bracketSize ?? 16) as BracketSize
   const gameActive = roomState.status === 'active'
 
+  // Room not found (e.g. server restarted) — clear stale tokens and go home
+  if (roomState.roomNotFound) {
+    localStorage.removeItem(`playerToken_${code}`)
+    localStorage.removeItem(`playerId_${code}`)
+    localStorage.removeItem(`roomId_${code}`)
+    localStorage.removeItem(`hostToken_${code}`)
+    localStorage.removeItem(`reclaimCode_${code}`)
+    router.replace('/')
+    return null
+  }
+
   // All players left — shown to host when they reconnect and find nobody waiting
   if (roomState.allPlayersLeft && session.isHost) {
     return (
@@ -351,6 +362,7 @@ export default function RoomPage() {
         totalRounds={roomState.totalRounds ?? 4}
         isHost={session?.isHost ?? false}
         onReveal={triggerReveal}
+        onLeave={handleReturnHome}
         playerName={myPlayer?.displayName}
         playerColour={myPlayer?.colour}
       />

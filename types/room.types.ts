@@ -30,4 +30,5 @@ export interface RoomState {
   currentMatchIndex: number
   disconnectedPlayers: Map<string, DisconnectedPlayer>
   champion: Item | null
+  createdAt: number // unix ms — used for TTL sweeps
 }

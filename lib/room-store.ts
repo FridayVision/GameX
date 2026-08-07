@@ -2,12 +2,34 @@ import { randomBytes } from 'crypto'
 import type { RoomState, RoomConfig } from '@/types/room.types'
 
 // Store on process (immune to Next.js webpack module isolation in dev mode)
-type ProcessWithRooms = NodeJS.Process & { __rooms?: Map<string, RoomState> }
+type ProcessWithStore = NodeJS.Process & {
+  __rooms?: Map<string, RoomState>
+  __roomSweepInterval?: ReturnType<typeof setInterval>
+}
+
+const ROOM_TTL_MS = 4 * 60 * 60 * 1000 // 4 hours
+const SWEEP_INTERVAL_MS = 30 * 60 * 1000 // 30 minutes
 
 function getRooms(): Map<string, RoomState> {
-  const p = process as ProcessWithRooms
+  const p = process as ProcessWithStore
   if (!p.__rooms) p.__rooms = new Map()
   return p.__rooms
+}
+
+/** Start periodic room cleanup — call once from server init. Safe to call multiple times. */
+export function startRoomSweep(): void {
+  const p = process as ProcessWithStore
+  if (p.__roomSweepInterval) return // already running
+  p.__roomSweepInterval = setInterval(() => {
+    const now = Date.now()
+    const rooms = getRooms()
+    for (const [id, room] of rooms) {
+      if (now - room.createdAt > ROOM_TTL_MS) {
+        rooms.delete(id)
+        console.log(`[room-store] swept expired room ${room.roomCode} (${id})`)
+      }
+    }
+  }, SWEEP_INTERVAL_MS)
 }
 
 // Room code: 4 numeric digits (e.g. "1234")
@@ -59,6 +81,7 @@ export function createRoom(config: RoomConfig): RoomState {
     currentMatchIndex: 0,
     disconnectedPlayers: new Map(),
     champion: null,
+    createdAt: Date.now(),
   }
 
   getRooms().set(roomId, room)

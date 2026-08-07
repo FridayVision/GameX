@@ -61,6 +61,7 @@ export interface PlayerRoomState {
   hostAbandoned: boolean
   allPlayersLeft: boolean
   gameEnded: boolean
+  roomNotFound: boolean
   // Post-game reveal
   revealVisible: boolean
   revealRows: RevealRow[] | null
@@ -101,6 +102,7 @@ export function usePlayerSocket(roomId: string | null, playerToken: string | nul
     hostAbandoned: false,
     allPlayersLeft: false,
     gameEnded: false,
+    roomNotFound: false,
     revealVisible: false,
     revealRows: null,
     revealPath: null,
@@ -176,6 +178,9 @@ export function usePlayerSocket(roomId: string | null, playerToken: string | nul
     })
     socket.on(EVENTS.ROOM_RESET, () => {
       setRoomState((prev) => ({ ...prev, gameEnded: true }))
+    })
+    socket.on(EVENTS.ROOM_NOT_FOUND, () => {
+      setRoomState((prev) => ({ ...prev, roomNotFound: true }))
     })
     socket.on(
       EVENTS.POOL_PROGRESS,

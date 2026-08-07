@@ -8,6 +8,7 @@ interface PlayerChampionScreenProps {
   totalRounds: number
   isHost: boolean
   onReveal: () => void
+  onLeave: () => void
   playerName?: string
   playerColour?: string
 }
@@ -24,6 +25,7 @@ export function PlayerChampionScreen({
   totalRounds,
   isHost,
   onReveal,
+  onLeave,
   playerName,
   playerColour,
 }: PlayerChampionScreenProps) {
@@ -455,9 +457,18 @@ export function PlayerChampionScreen({
           </div>
         )}
 
-        {/* Non-host: waiting — solid dark bg card */}
+        {/* Non-host: waiting — solid dark bg card + leave button */}
         {!isHost && (
-          <div className="reveal-fade-up d-500" style={{ width: '100%', maxWidth: 320 }}>
+          <div
+            className="reveal-fade-up d-500"
+            style={{
+              width: '100%',
+              maxWidth: 320,
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 10,
+            }}
+          >
             <div
               style={{
                 background: 'rgba(8,8,8,0.92)',
@@ -491,6 +502,22 @@ export function PlayerChampionScreen({
                 Waiting for host to reveal assignments…
               </span>
             </div>
+            <button
+              onClick={onLeave}
+              style={{
+                width: '100%',
+                height: 44,
+                borderRadius: 12,
+                border: '1px solid rgba(250,255,254,0.10)',
+                background: 'rgba(8,8,8,0.85)',
+                color: 'rgba(250,255,254,0.40)',
+                fontWeight: 600,
+                fontSize: '0.78rem',
+                cursor: 'pointer',
+              }}
+            >
+              Leave Game
+            </button>
           </div>
         )}
       </div>

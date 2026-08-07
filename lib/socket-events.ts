@@ -35,6 +35,7 @@ export const EVENTS = {
   HOST_LOCK_POOL: 'host-lock-pool',
   // Room management
   ROOM_RESET: 'room-reset',
+  ROOM_NOT_FOUND: 'room-not-found', // server → client when room doesn't exist (e.g. after restart)
   // Post-game reveal
   HOST_REVEAL_START: 'host-reveal-start', // client → server; host triggers reveal
 } as const

@@ -48,6 +48,7 @@ export interface BoardRoomState {
   gamePaused: boolean
   hostAbandoned: boolean
   roomReset: boolean
+  roomNotFound: boolean
   // Post-game reveal
   revealVisible: boolean
   revealRows: RevealRow[] | null
@@ -83,6 +84,7 @@ export function useBoardSocket(roomCode: string | null) {
     gamePaused: false,
     hostAbandoned: false,
     roomReset: false,
+    roomNotFound: false,
     revealVisible: false,
     revealRows: null,
     revealPath: null,
@@ -161,6 +163,9 @@ export function useBoardSocket(roomCode: string | null) {
     })
     socket.on(EVENTS.ROOM_RESET, () => {
       setRoomState((prev) => ({ ...prev, roomReset: true }))
+    })
+    socket.on(EVENTS.ROOM_NOT_FOUND, () => {
+      setRoomState((prev) => ({ ...prev, roomNotFound: true }))
     })
     socket.on(
       EVENTS.POOL_PROGRESS,
