@@ -79,6 +79,19 @@ export default function RoomPage() {
     }, 150)
   }, [code, router, emitRoomReset])
 
+  const handleReturnHome = useCallback(() => {
+    if (session?.isHost) {
+      handleEndGame()
+    } else {
+      localStorage.removeItem(`playerToken_${code}`)
+      localStorage.removeItem(`playerId_${code}`)
+      localStorage.removeItem(`roomId_${code}`)
+      localStorage.removeItem(`hostToken_${code}`)
+      localStorage.removeItem(`reclaimCode_${code}`)
+      router.replace('/')
+    }
+  }, [session, code, router, handleEndGame])
+
   const handleStart = useCallback(async () => {
     if (!session?.hostToken) return
     setStartLoading(true)
@@ -324,6 +337,7 @@ export default function RoomPage() {
           champion={roomState.champion}
           totalRounds={roomState.totalRounds ?? 4}
           myPlayerId={session.playerId}
+          onReturn={handleReturnHome}
         />
       )
     }

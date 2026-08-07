@@ -9,6 +9,7 @@ interface PlayerRevealTableProps {
   champion: Item
   totalRounds: number
   myPlayerId: string
+  onReturn: () => void
 }
 
 function roundColHeader(index: number, total: number): string {
@@ -22,6 +23,7 @@ export function PlayerRevealTable({
   champion,
   totalRounds,
   myPlayerId,
+  onReturn,
 }: PlayerRevealTableProps) {
   const [loaded, setLoaded] = useState(false)
 
@@ -278,6 +280,26 @@ export function PlayerRevealTable({
               </div>
             )
           })}
+
+          {/* Return to Main Menu */}
+          <button
+            onClick={onReturn}
+            style={{
+              marginTop: 8,
+              width: '100%',
+              height: 48,
+              borderRadius: 12,
+              border: '1px solid rgba(250,255,254,0.12)',
+              background: 'rgba(8,8,8,0.92)',
+              color: 'rgba(250,255,254,0.55)',
+              fontWeight: 700,
+              fontSize: '0.82rem',
+              cursor: 'pointer',
+              letterSpacing: '0.02em',
+            }}
+          >
+            Return to Main Menu
+          </button>
         </div>
       </div>
     </div>

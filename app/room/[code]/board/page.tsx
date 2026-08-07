@@ -101,6 +101,7 @@ export default function BoardPage() {
           rows={roomState.revealRows}
           champion={roomState.champion}
           totalRounds={roomState.totalRounds ?? 4}
+          onReturn={() => router.replace('/')}
         />
       )
     }

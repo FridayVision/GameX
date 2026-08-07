@@ -8,6 +8,7 @@ interface BoardRevealTableProps {
   rows: RevealRow[]
   champion: Item
   totalRounds: number
+  onReturn: () => void
 }
 
 function roundColHeader(index: number, total: number): string {
@@ -16,7 +17,7 @@ function roundColHeader(index: number, total: number): string {
   return `R${index + 1}`
 }
 
-export function BoardRevealTable({ rows, champion, totalRounds }: BoardRevealTableProps) {
+export function BoardRevealTable({ rows, champion, totalRounds, onReturn }: BoardRevealTableProps) {
   const [loaded, setLoaded] = useState(false)
 
   useEffect(() => {
@@ -85,6 +86,27 @@ export function BoardRevealTable({ rows, champion, totalRounds }: BoardRevealTab
               Who Defended What
             </h1>
           </div>
+
+          {/* Return to Home — subtle pill, board-operator control */}
+          <button
+            onClick={onReturn}
+            style={{
+              marginLeft: 'auto',
+              height: 44,
+              padding: '0 20px',
+              borderRadius: 10,
+              border: '1px solid rgba(250,255,254,0.12)',
+              background: 'rgba(6,10,5,0.88)',
+              color: 'rgba(250,255,254,0.45)',
+              fontWeight: 700,
+              fontSize: '0.72rem',
+              letterSpacing: '0.06em',
+              cursor: 'pointer',
+              flexShrink: 0,
+            }}
+          >
+            ← Home
+          </button>
 
           {/* Champion pill */}
           <div
