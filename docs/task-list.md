@@ -1,6 +1,6 @@
 # GameX — Dev Task List
 
-Generated: 2026-07-27 | Last updated: 2026-08-07 (added M8 deployment milestone + return-to-menu button)
+Generated: 2026-07-27 | Last updated: 2026-08-07 (M8 pre-flight fixes complete)
 Tech stack: Next.js 16 + Socket.IO 4 + TypeScript 6 + Tailwind 4
 Default config: 4 players, 16 items | Hosting: Railway (custom server)
 
@@ -171,10 +171,10 @@ _Note: Vercel is not compatible with this stack — Socket.IO requires a persist
 
 ### Pre-flight fixes
 
-- [ ] **Room cleanup / TTL** — add a 4-hour TTL to rooms in `lib/room-store.ts`; sweep expired rooms every 30 min; prevents memory leak on long-running server
-- [ ] **ROOM_NOT_FOUND handling** — on socket connect, if room doesn't exist emit `ROOM_NOT_FOUND` to client; client clears localStorage and redirects to `/`; prevents stuck screens after server restart
-- [ ] **Pool generation failure UI** — handle non-zero exit from `pool_generator.py`; emit `POOL_ERROR` event; host sees retry option instead of infinite spinner
-- [ ] **Return to Main Menu on champion screen** — add a subtle exit option for non-host players on `PlayerChampionScreen` so they aren't stuck if host leaves without triggering reveal
+- [x] **Room cleanup / TTL** — `startRoomSweep()` in `room-store.ts`; 4h TTL, 30-min interval, stored on `process` to survive hot-reload; called once from `initSocketServer`
+- [x] **ROOM_NOT_FOUND handling** — emitted before silent disconnect on both `/board` and `/player`; player hook clears localStorage + redirects; board hook redirects
+- [x] **Pool generation failure UI** — already implemented: `POOL_PROGRESS{status:'failed'}` → `poolError` state → error card + "Try Again" in `HostPoolCuration`
+- [x] **Return to Main Menu on champion screen** — `onLeave` prop + "Leave Game" button on non-host `PlayerChampionScreen`; wired to `handleReturnHome`
 
 ### Environment & config
 
