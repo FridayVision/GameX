@@ -20,12 +20,18 @@ if (pyCheck.error || pyCheck.status !== 0) {
 const app = next({ dev })
 const handler = app.getRequestHandler()
 
-app.prepare().then(() => {
-  const httpServer = createServer(handler)
+app
+  .prepare()
+  .then(() => {
+    const httpServer = createServer(handler)
 
-  initSocketServer(httpServer)
+    initSocketServer(httpServer)
 
-  httpServer.listen(port, () => {
-    console.log(`> Ready on http://localhost:${port} [${dev ? 'dev' : 'prod'}]`)
+    httpServer.listen(port, () => {
+      console.log(`> Ready on http://localhost:${port} [${dev ? 'dev' : 'prod'}]`)
+    })
   })
-})
+  .catch((err) => {
+    console.error('[server] Failed to prepare Next.js app:', err)
+    process.exit(1)
+  })

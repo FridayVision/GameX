@@ -175,6 +175,8 @@ _Note: Vercel is not compatible with this stack — Socket.IO requires a persist
 - [x] **ROOM_NOT_FOUND handling** — emitted before silent disconnect on both `/board` and `/player`; player hook clears localStorage + redirects; board hook redirects
 - [x] **Pool generation failure UI** — already implemented: `POOL_PROGRESS{status:'failed'}` → `poolError` state → error card + "Try Again" in `HostPoolCuration`
 - [x] **Return to Main Menu on champion screen** — `onLeave` prop + "Leave Game" button on non-host `PlayerChampionScreen`; wired to `handleReturnHome`
+- [x] **Missing `child.on('error')` in boost route** — `app/api/pool/boost/route.ts` had no spawn error handler; `spawn python3 ENOENT` caused `uncaughtException` and crashed the server; fixed to match the guard already in `app/api/pool/generate/route.ts`
+- [x] **Unhandled promise rejection in `server.ts`** — `app.prepare().then()` had no `.catch()`; Next.js init failure would silently crash the process in Node 15+; added `.catch()` with `process.exit(1)` and error log
 
 ### Environment & config
 
@@ -186,10 +188,13 @@ _Note: Vercel is not compatible with this stack — Socket.IO requires a persist
 
 - [x] Create `railway.toml` — start command `npm run start`, restart on failure (max 5 retries)
 - [x] Create `nixpacks.toml` — installs Python 3.12 + pip alongside Node; runs `pip install -r tools/requirements.txt` at build time
+- [x] Add `Dockerfile` — explicit `node:20-slim` + `apt-get install python3 python3-pip` build; Railway prefers Dockerfile over nixpacks when both are present
 - [x] Add `engines: { node: ">=20.0.0" }` to `package.json`
 - [ ] Configure Railway environment variables in dashboard (`TMDB_API_KEY`, `GEMINI_API_KEY`, `BRAVE_SEARCH_API_KEY`)
 - [ ] Set Railway region closest to target audience
 - [ ] Verify custom domain + SSL termination works with Socket.IO upgrade headers (`websocket` transport)
+- [ ] **readline error handler** — `createInterface({ input: child.stdout })` in `app/api/pool/generate/route.ts` and `app/api/pool/boost/route.ts` has no `rl.on('error')` handler; add to prevent unhandled stream errors if stdout closes unexpectedly
+- [ ] **Socket.IO CORS lockdown** — `lib/socket-server.ts` currently uses `cors: { origin: '*' }`; restrict to deployed Railway domain before going public
 
 ### Smoke test checklist (post-deploy)
 

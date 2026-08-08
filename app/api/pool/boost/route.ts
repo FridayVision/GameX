@@ -119,6 +119,16 @@ export async function POST(req: NextRequest) {
 
   child.stderr.on('data', (data) => console.error('[pool_boost stderr]', data.toString()))
 
+  // Handle spawn failure (e.g. python3 not on PATH) — prevents uncaughtException crash
+  child.on('error', (err) => {
+    console.error('[pool_boost] spawn error:', err.message)
+    updateJob(jobId, { status: 'error', error: err.message })
+    if (io) {
+      io.of('/board').to(roomId).emit(EVENTS.POOL_PROGRESS, { jobId, status: 'failed' })
+      io.of('/player').to(roomId).emit(EVENTS.POOL_PROGRESS, { jobId, status: 'failed' })
+    }
+  })
+
   child.on('close', (code) => {
     if (code !== 0 || newItems.length === 0) {
       updateJob(jobId, { status: 'error' })
