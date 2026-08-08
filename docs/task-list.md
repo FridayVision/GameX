@@ -1,6 +1,6 @@
 # GameX — Dev Task List
 
-Generated: 2026-07-27 | Last updated: 2026-08-07 (M8 env & config complete)
+Generated: 2026-07-27 | Last updated: 2026-08-08 (M8 Railway deployment config complete)
 Tech stack: Next.js 16 + Socket.IO 4 + TypeScript 6 + Tailwind 4
 Default config: 4 players, 16 items | Hosting: Railway (custom server)
 
@@ -184,10 +184,11 @@ _Note: Vercel is not compatible with this stack — Socket.IO requires a persist
 
 ### Railway setup
 
-- [ ] Create `railway.toml` — set build command (`npm run build`), start command (`npm start`), and Python nixpack
-- [ ] Configure Railway environment variables (all keys from `.env.example`)
+- [x] Create `railway.toml` — start command `npm run start`, restart on failure (max 5 retries)
+- [x] Create `nixpacks.toml` — installs Python 3.12 + pip alongside Node; runs `pip install -r tools/requirements.txt` at build time
+- [x] Add `engines: { node: ">=20.0.0" }` to `package.json`
+- [ ] Configure Railway environment variables in dashboard (`TMDB_API_KEY`, `GEMINI_API_KEY`, `BRAVE_SEARCH_API_KEY`)
 - [ ] Set Railway region closest to target audience
-- [ ] Enable Railway's persistent volume if needed (logs only — all state is in-memory by design)
 - [ ] Verify custom domain + SSL termination works with Socket.IO upgrade headers (`websocket` transport)
 
 ### Smoke test checklist (post-deploy)

@@ -27,6 +27,9 @@
       "prettier --write"
     ]
   },
+  "engines": {
+    "node": ">=20.0.0"
+  },
   "devDependencies": {
     "@eslint/eslintrc": "^3.3.6",
     "@tailwindcss/postcss": "^4.3.3",
