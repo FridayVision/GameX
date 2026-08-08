@@ -91,6 +91,27 @@ export default function Home() {
               >
                 Join Room
               </button>
+              {joinCode.length === 4 && (
+                <button
+                  onClick={() => router.push(`/room/${joinCode}/board`)}
+                  className="w-full h-[44px] border border-[rgba(250,255,254,0.18)] text-[rgba(250,255,254,0.55)] font-semibold text-[0.88rem] rounded-[10px] flex items-center justify-center gap-2 bg-transparent transition-all active:scale-[0.97] hover:bg-[rgba(250,255,254,0.04)] hover:text-[rgba(250,255,254,0.75)]"
+                >
+                  <svg
+                    width="13"
+                    height="13"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <rect x="2" y="3" width="20" height="14" rx="2" />
+                    <path d="M8 21h8M12 17v4" />
+                  </svg>
+                  Open Board
+                </button>
+              )}
             </div>
             <p className="text-[rgba(250,255,254,0.55)] text-[0.72rem] mt-4 tracking-wide">
               No account needed

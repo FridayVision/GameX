@@ -45,15 +45,16 @@ function generateUniqueRoomCode(): string {
   return code
 }
 
-// Reclaim code: 4 alphanumeric chars (e.g. "ab99") — lowercase + digits, no ambiguous chars
-const RECLAIM_CODE_CHARS = 'abcdefghjkmnpqrstuvwxyz23456789'
+// Reclaim code: 2 letters then 2 digits (e.g. "dg78") — easy to read aloud, no ambiguous chars
+const RECLAIM_LETTERS = 'abcdefghjkmnpqrstuvwxyz'
+const RECLAIM_DIGITS = '23456789'
 
 function generateReclaimCode(): string {
-  let code = ''
-  for (let i = 0; i < 4; i++) {
-    code += RECLAIM_CODE_CHARS[Math.floor(Math.random() * RECLAIM_CODE_CHARS.length)]
-  }
-  return code
+  const l1 = RECLAIM_LETTERS[Math.floor(Math.random() * RECLAIM_LETTERS.length)]
+  const l2 = RECLAIM_LETTERS[Math.floor(Math.random() * RECLAIM_LETTERS.length)]
+  const d1 = RECLAIM_DIGITS[Math.floor(Math.random() * RECLAIM_DIGITS.length)]
+  const d2 = RECLAIM_DIGITS[Math.floor(Math.random() * RECLAIM_DIGITS.length)]
+  return `${l1}${l2}${d1}${d2}`
 }
 
 export function createRoom(config: RoomConfig): RoomState {
