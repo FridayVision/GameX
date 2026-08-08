@@ -1,6 +1,6 @@
 # GameX — Dev Task List
 
-Generated: 2026-07-27 | Last updated: 2026-08-08 (M8 Railway deployment config complete)
+Generated: 2026-07-27 | Last updated: 2026-08-08 (M8 Railway deployment live — full game run-through verified)
 Tech stack: Next.js 16 + Socket.IO 4 + TypeScript 6 + Tailwind 4
 Default config: 4 players, 16 items | Hosting: Railway (custom server)
 
@@ -190,15 +190,15 @@ _Note: Vercel is not compatible with this stack — Socket.IO requires a persist
 - [x] Create `nixpacks.toml` — installs Python 3.12 + pip alongside Node; runs `pip install -r tools/requirements.txt` at build time
 - [x] Add `Dockerfile` — explicit `node:20-slim` + `apt-get install python3 python3-pip` build; Railway prefers Dockerfile over nixpacks when both are present
 - [x] Add `engines: { node: ">=20.0.0" }` to `package.json`
-- [ ] Configure Railway environment variables in dashboard (`TMDB_API_KEY`, `GEMINI_API_KEY`, `BRAVE_SEARCH_API_KEY`)
+- [x] Configure Railway environment variables in dashboard (`TMDB_API_KEY`, `GEMINI_API_KEY`, `BRAVE_SEARCH_API_KEY`)
 - [ ] Set Railway region closest to target audience
-- [ ] Verify custom domain + SSL termination works with Socket.IO upgrade headers (`websocket` transport)
-- [ ] **readline error handler** — `createInterface({ input: child.stdout })` in `app/api/pool/generate/route.ts` and `app/api/pool/boost/route.ts` has no `rl.on('error')` handler; add to prevent unhandled stream errors if stdout closes unexpectedly
-- [ ] **Socket.IO CORS lockdown** — `lib/socket-server.ts` currently uses `cors: { origin: '*' }`; restrict to deployed Railway domain before going public
+- [x] Verify custom domain + SSL termination works with Socket.IO upgrade headers (`websocket` transport)
+- [x] **readline error handler** — added `rl.on('error')` to `app/api/pool/generate/route.ts` and `app/api/pool/boost/route.ts`; prevents uncaughtException if stdout closes unexpectedly mid-generation
+- [x] **Socket.IO CORS lockdown** — `lib/socket-server.ts` now reads `NEXT_PUBLIC_APP_URL` env var; falls back to `*` in dev; set the var in Railway dashboard to lock to your domain
 
 ### Smoke test checklist (post-deploy)
 
-- [ ] Create room → join 4 players on mobile → board on desktop → full game run-through
+- [x] Create room → join 4 players on mobile → board on desktop → full game run-through
 - [ ] Kill one player tab mid-vote → grace timer fires → host proceeds anyway
 - [ ] Close host tab → board shows paused → reclaim via reclaimCode → game resumes
 - [ ] Host clicks "Return to Main Menu" on reveal table → board + all players navigate home

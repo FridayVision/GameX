@@ -81,6 +81,10 @@ export async function POST(req: NextRequest) {
 
     const rl = createInterface({ input: child.stdout })
 
+    rl.on('error', (err) => {
+      console.error('[pool_generator] readline error:', err.message)
+    })
+
     rl.on('line', (line) => {
       try {
         const event = JSON.parse(line) as {

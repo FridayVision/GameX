@@ -67,8 +67,9 @@ function getCurrentVotes(room: RoomState): Array<{ colour: string; side: 'A' | '
 }
 
 export function initSocketServer(httpServer: HTTPServer): void {
+  const allowedOrigin = process.env.NEXT_PUBLIC_APP_URL ?? '*'
   const io = new Server(httpServer, {
-    cors: { origin: '*' },
+    cors: { origin: allowedOrigin },
   })
   ;(process as ProcessWithIO).__socketIO = io
 
