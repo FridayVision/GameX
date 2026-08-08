@@ -128,6 +128,25 @@ export async function POST(req: NextRequest) {
       console.error('[pool_generator stderr]', data.toString())
     })
 
+    // Handle spawn failure (e.g. python3 not on PATH) — prevents uncaughtException crash
+    child.on('error', (err) => {
+      console.error('[pool_generator] spawn error:', err.message)
+      updateJob(jobId, { status: 'error', error: err.message })
+      if (io) {
+        const errPayload = {
+          jobId,
+          error: 'Pool generation unavailable — python3 not found on server.',
+        }
+        io.of('/board')
+          .to(roomId)
+          .emit(EVENTS.POOL_PROGRESS, { ...errPayload, status: 'failed' })
+        io.of('/player')
+          .to(roomId)
+          .emit(EVENTS.POOL_PROGRESS, { ...errPayload, status: 'failed' })
+      }
+      updateRoom(roomId, { status: 'lobby' })
+    })
+
     child.on('close', (code) => {
       if (code !== 0 || allItems.length === 0) {
         updateJob(jobId, { status: 'error', error: `Process exited with code ${code}` })
